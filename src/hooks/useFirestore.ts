@@ -7,7 +7,6 @@ import {
     deleteDoc,
     doc,
     query,
-    orderBy,
     QueryConstraint
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -51,7 +50,7 @@ export function useFirestore<T extends { id?: string }>(collectionName: string, 
     const update = async (id: string, docData: Partial<T>) => {
         try {
             const docRef = doc(db, collectionName, id);
-            await updateDoc(docRef, docData);
+            await updateDoc(docRef, docData as any);
         } catch (err: any) {
             setError(err.message);
             throw err;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Trash2, Printer, Save, Loader } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
-import type { Product, CartItem, Customer, Invoice } from '../types';
+import type { Product, CartItem, Customer, Invoice, ChannelType } from '../types';
 import { generateNextInvoiceId } from '../utils/invoiceUtils';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -29,6 +29,10 @@ const Billing: React.FC = () => {
     const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
     const [processing, setProcessing] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+
+    // Channel & Order Details
+    const [channel, setChannel] = useState<ChannelType>('OFFLINE');
+    const [channelOrderId, setChannelOrderId] = useState('');
 
     // Extra Fields
     const [logisticsFee, setLogisticsFee] = useState<string | number>(0);
@@ -69,6 +73,10 @@ const Billing: React.FC = () => {
                         discount: item.discount || 0
                     } as CartItem));
                     setCart(loadedItems);
+
+                    // Set Channel Data
+                    setChannel(data.channel || 'OFFLINE');
+                    setChannelOrderId(data.channelOrderId || '');
                 }
             };
             loadInvoice();
@@ -81,7 +89,7 @@ const Billing: React.FC = () => {
 
         setProcessing(true);
         try {
-            const invoiceId = editId || await generateNextInvoiceId();
+            const invoiceId = editId || await generateNextInvoiceId(channel);
 
             const subTotal = cart.reduce((sum, item) => sum + (Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity), 0);
             const taxTotal = cart.reduce((sum, item) => sum + ((Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (Number(item.gstRate) / 100)), 0);
@@ -109,7 +117,10 @@ const Billing: React.FC = () => {
                 marketplaceFee: Number(marketplaceFee),
                 otherTax: Number(otherTax),
                 refundAmount: Number(refundAmount),
-                totalAmount: (subTotal + taxTotal + Number(logisticsFee) + Number(otherTax)) - (Number(marketplaceFee) + Number(refundAmount))
+                totalAmount: (subTotal + taxTotal + Number(logisticsFee) + Number(otherTax)) - (Number(marketplaceFee) + Number(refundAmount)),
+                channel: channel,
+                channelOrderId: channelOrderId,
+                invoiceType: 'SALES'
             };
 
             // Create/Update Invoice
@@ -259,7 +270,7 @@ const Billing: React.FC = () => {
                 <div className="card shadow-sm border-0 flex-fill overflow-hidden">
                     <div className="card-header bg-white border-bottom pt-3 pb-3">
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h5 className="card-title fw-bold mb-0">Customer Details</h5>
+                            <h5 className="card-title fw-bold mb-0">Invoice Details</h5>
                             <input
                                 type="date"
                                 className="form-control form-control-sm w-auto"
@@ -267,6 +278,36 @@ const Billing: React.FC = () => {
                                 onChange={(e) => setInvoiceDate(e.target.value)}
                             />
                         </div>
+
+                        {/* Channel Selection */}
+                        <div className="row g-2 mb-3">
+                            <div className="col-md-6">
+                                <label className="small text-muted fw-bold">Sales Channel</label>
+                                <select
+                                    className="form-select form-select-sm"
+                                    value={channel}
+                                    onChange={(e) => setChannel(e.target.value as ChannelType)}
+                                >
+                                    <option value="OFFLINE">Offline / POS</option>
+                                    <option value="FLIPKART">Flipkart</option>
+                                    <option value="AMAZON">Amazon</option>
+                                    <option value="MEESHO">Meesho</option>
+                                    <option value="WEBSITE">Website</option>
+                                </select>
+                            </div>
+                            {channel !== 'OFFLINE' && (
+                                <div className="col-md-6">
+                                    <label className="small text-muted fw-bold">Channel Order ID</label>
+                                    <input
+                                        className="form-control form-control-sm"
+                                        placeholder="e.g. OD123456789"
+                                        value={channelOrderId}
+                                        onChange={(e) => setChannelOrderId(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
                         <div className="row g-2">
                             <div className="col-md-6">
                                 <input
@@ -470,7 +511,9 @@ const Billing: React.FC = () => {
                     otherTax: Number(otherTax),
                     refundAmount: Number(refundAmount),
                     total: total,
-                    type: 'SALES'
+                    type: 'SALES',
+                    channel: channel,
+                    channelOrderId: channelOrderId
                 }}
             />
         </div>

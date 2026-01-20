@@ -10,6 +10,7 @@ export interface Product {
     quantity: number;
     hsnCode?: string;
     gstRate: number; // 0, 5, 12, 18, 28
+    status?: 'active' | 'inactive';
 }
 
 export interface Customer {
@@ -50,6 +51,9 @@ export interface InvoiceItem {
     total: number;
 }
 
+export type ChannelType = 'OFFLINE' | 'AMAZON' | 'FLIPKART' | 'MEESHO' | 'WEBSITE';
+export type InvoiceType = 'SALES' | 'RETURN' | 'PURCHASE';
+
 export interface Invoice {
     id: string;
     date: string;
@@ -64,9 +68,47 @@ export interface Invoice {
     otherTax?: number;
     refundAmount?: number;
     totalAmount: number;
+
+    // Phase 1 Updates
+    channel?: ChannelType;
+    channelOrderId?: string;
+    invoiceType?: InvoiceType;
+    pdfPath?: string;
 }
 
 export interface PurchaseBill extends Invoice {
     vendorName: string; // instead of customerName
     deliveryCharges: number;
+}
+
+export interface FlipkartOrder {
+    id?: string;
+    channel?: string;
+    orderId?: string;
+    orderItemId?: string;
+    dispatchedDate?: string;
+    paymentDate?: string;
+    sku?: string;
+    quantity?: number;
+    paymentMode?: 'Prepaid' | 'Postpaid';
+    hsnCode?: string;
+    fromState?: string;
+    toState?: string;
+    orderItemValue?: number;
+    customerLogisticsFee?: number;
+    sellerPrice?: number;
+    marketplaceFees?: number;
+    gstOnFees?: number;
+    productCost?: number;
+    bankSettlement?: number;
+    inputGstCredit?: number;
+    tdsCredit?: number;
+    deliveryStatus?: 'Sale' | 'CustomerReturn' | 'LogisticsReturn' | 'Cancellation';
+    returnProductStatus?: 'Working' | 'Damaged';
+    refundAmount?: number;
+    totalDiscount?: number;
+    profitLoss?: number;
+    uploadDate: string;
+    // Store all raw data from Excel for flexibility
+    rawData?: Record<string, any>;
 }

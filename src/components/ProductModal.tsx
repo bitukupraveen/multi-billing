@@ -21,7 +21,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
         image: '',
         quantity: 0,
         hsnCode: '',
-        gstRate: 0
+        gstRate: 0,
+        status: 'active'
     };
 
     const [formData, setFormData] = useState<Product>(initialState);
@@ -136,6 +137,19 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, pr
                                             <option value="12">12%</option>
                                             <option value="18">18%</option>
                                             <option value="28">28%</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <label className="form-label text-muted small fw-bold">Status</label>
+                                        <select
+                                            name="status"
+                                            value={formData.status || 'active'}
+                                            onChange={(e) => handleChange(e as any)}
+                                            className="form-select"
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
                                         </select>
                                     </div>
 

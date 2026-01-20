@@ -21,6 +21,8 @@ interface InvoicePreviewModalProps {
         refundAmount?: number;
         total: number;
         type: 'SALES' | 'PURCHASE';
+        channel?: string;
+        channelOrderId?: string;
     };
 }
 
@@ -29,7 +31,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ show, onClose
 
     const handlePrint = useReactToPrint({
         content: () => componentRef.current,
-    });
+    } as any);
 
     if (!show) return null;
 
@@ -72,6 +74,12 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ show, onClose
                                 <div className="mt-3">
                                     <p className="mb-0 small fw-bold">Invoice No: <span className="text-dark">{data.invoiceId || 'DRAFT'}</span></p>
                                     <p className="mb-0 small">Date: {new Date(data.date).toLocaleDateString()}</p>
+                                    {data.channel && data.channel !== 'OFFLINE' && (
+                                        <div className="mt-2 border-top pt-1">
+                                            <p className="mb-0 small text-muted">Channel: {data.channel}</p>
+                                            {data.channelOrderId && <p className="mb-0 small text-muted">Ref: {data.channelOrderId}</p>}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -7,6 +7,7 @@ import PurchaseBilling from './pages/PurchaseBilling';
 import PurchaseBillsList from './pages/PurchaseBillsList';
 
 import Invoices from './pages/Invoices';
+import FlipkartReport from './pages/FlipkartReport';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/purchase-billing" element={<PurchaseBilling />} />
           <Route path="/purchase-bills" element={<PurchaseBillsList />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/flipkart-report" element={<FlipkartReport />} />
         </Routes>
       </Layout>
     </Router>

@@ -1,8 +1,35 @@
 import { db } from '../firebase/config';
 import { doc, runTransaction } from 'firebase/firestore';
 
-export const generateNextInvoiceId = async (): Promise<string> => {
-    const counterRef = doc(db, 'counters', 'invoices');
+export const generateNextInvoiceId = async (channel: string = 'OFFLINE'): Promise<string> => {
+    // Determine prefix based on channel
+    let prefix = 'INV';
+    let counterDocId = 'invoices'; // Default counter
+
+    switch (channel) {
+        case 'FLIPKART':
+            prefix = 'FLIP';
+            counterDocId = 'invoices_flipkart';
+            break;
+        case 'AMAZON':
+            prefix = 'AMZ';
+            counterDocId = 'invoices_amazon';
+            break;
+        case 'MEESHO':
+            prefix = 'MES';
+            counterDocId = 'invoices_meesho';
+            break;
+        case 'WEBSITE':
+            prefix = 'WEB';
+            counterDocId = 'invoices_website';
+            break;
+        default:
+            prefix = 'INV';
+            counterDocId = 'invoices_offline';
+            break;
+    }
+
+    const counterRef = doc(db, 'counters', counterDocId);
 
     try {
         const newId = await runTransaction(db, async (transaction) => {
@@ -19,8 +46,9 @@ export const generateNextInvoiceId = async (): Promise<string> => {
             return nextCount;
         });
 
-        // Format: INV1, INV2...
-        return `INV${newId}`;
+        // Format: PRE001
+        // Pad with zeros for consistency
+        return `${prefix}${newId.toString().padStart(4, '0')}`;
     } catch (error) {
         console.error("Error generating invoice ID:", error);
         throw error;

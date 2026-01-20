@@ -3,6 +3,7 @@ import { Plus, Search, Edit2, Trash2, Loader } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
 import type { Product } from '../types';
 import ProductModal from '../components/ProductModal';
+import ImportModal from '../components/ImportModal';
 
 const ProductManager: React.FC = () => {
     // Determine sort/ordering strategy or just fetch all.
@@ -11,6 +12,7 @@ const ProductManager: React.FC = () => {
     const { data: products, loading, add, update, remove } = useFirestore<Product>('products');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -53,13 +55,22 @@ const ProductManager: React.FC = () => {
         <div className="container-fluid p-0">
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
                 <h1 className="h3 mb-0 text-dark">Products</h1>
-                <button
-                    onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
-                    className="btn btn-primary d-flex align-items-center gap-2"
-                >
-                    <Plus size={20} />
-                    Add Product
-                </button>
+                <div className="d-flex gap-2">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="btn btn-outline-primary d-flex align-items-center gap-2"
+                    >
+                        <Plus size={20} className="rotate-45" /> {/* Simulating Upload Icon look or use simple Plus for now */}
+                        Import
+                    </button>
+                    <button
+                        onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}
+                        className="btn btn-primary d-flex align-items-center gap-2"
+                    >
+                        <Plus size={20} />
+                        Add Product
+                    </button>
+                </div>
             </div>
 
             <div className="card shadow-sm border-0">
@@ -116,7 +127,12 @@ const ProductManager: React.FC = () => {
                                             <td className="text-muted font-monospace small">{product.sku}</td>
                                             <td>
                                                 <div>{product.category}</div>
-                                                <div className="small text-muted">GST: {product.gstRate}%</div>
+                                                <div className="d-flex gap-2 mt-1">
+                                                    <span className="small text-muted">GST: {product.gstRate}%</span>
+                                                    <span className={`badge ${product.status === 'inactive' ? 'text-bg-secondary' : 'text-bg-success'} rounded-pill`} style={{ fontSize: '0.7rem' }}>
+                                                        {(product.status || 'active').toUpperCase()}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td>
                                                 <span className={`badge rounded-pill ${product.quantity > 0 ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'
@@ -157,6 +173,12 @@ const ProductManager: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSave}
                 product={editingProduct}
+            />
+
+            <ImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSuccess={() => { /* maybe refresh or show toast */ }}
             />
         </div>
     );
