@@ -112,3 +112,49 @@ export interface FlipkartOrder {
     // Store all raw data from Excel for flexibility
     rawData?: Record<string, any>;
 }
+export interface MeeshoOrder {
+    id?: string;
+    channel: string;
+    orderId: string;
+    subOrderId: string;
+    subOrderContribution: 'Delivered' | 'RTO' | 'Return';
+    paymentStatus: {
+        ordered?: string;
+        shipped?: string;
+        delivered?: string;
+        returned?: string;
+        rto?: string;
+        paymentPaid?: string;
+    };
+    productDetails: {
+        productName: string;
+        skuCode: string;
+        hsnCode: string;
+        quantity: number;
+        productCost: number;
+        gstRate: number;
+    };
+    revenue: {
+        saleRevenue: number;
+        shippingRevenue: number;
+        salesReturns: number;
+        shippingReturns: number;
+        forwardShippingRecovery: number;
+    };
+    deductions: {
+        meeshoCommission: number;
+        warehousingFee: number;
+        shippingCharge: number;
+        returnShippingCharge: number;
+    };
+    settlement: {
+        tcsInputCredits: number;
+        tdsDeduction: number;
+    };
+    summary: {
+        bankSettlement: number;
+        gst: number;
+        profitLoss: number;
+    };
+    uploadDate: string;
+}

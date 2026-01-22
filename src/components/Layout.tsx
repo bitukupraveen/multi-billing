@@ -14,6 +14,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { name: 'Purchase History', path: '/purchase-bills', icon: FileText },
         { name: 'Invoices', path: '/invoices', icon: FileText },
         { name: 'Flipkart Report', path: '/flipkart-report', icon: FileSpreadsheet },
+        { name: 'Meesho Report', path: '/meesho-report', icon: FileSpreadsheet },
     ];
 
     const handleToggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
