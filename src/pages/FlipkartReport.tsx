@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, FileSpreadsheet, AlertCircle, Save, CheckCircle, Loader, Eye, Edit2, Trash2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, Save, CheckCircle, Loader, Eye, Edit2, Trash2, Download, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
 import type { FlipkartOrder } from '../types';
 import FlipkartOrderModal from '../components/FlipkartOrderModal';
@@ -13,7 +13,8 @@ const FlipkartReport: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
-    // Pagination state
+    // Pagination and Search state
+    const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
 
@@ -237,10 +238,21 @@ const FlipkartReport: React.FC = () => {
         XLSX.writeFile(wb, `Flipkart_Orders_Report_${date}.xlsx`);
     };
 
+    // Filter logic
+    const filteredOrders = React.useMemo(() => {
+        if (!searchTerm) return savedOrders;
+        const lowSearch = searchTerm.toLowerCase();
+        return savedOrders.filter(order =>
+            order.orderId?.toLowerCase().includes(lowSearch) ||
+            order.orderItemId?.toLowerCase().includes(lowSearch) ||
+            order.sku?.toLowerCase().includes(lowSearch)
+        );
+    }, [savedOrders, searchTerm]);
+
     // Pagination calculations
-    const totalPages = Math.ceil(savedOrders.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginatedOrders = savedOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const paginatedOrders = filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     const handlePageChange = (page: number) => {
         if (page >= 1 && page <= totalPages) {
@@ -352,8 +364,31 @@ const FlipkartReport: React.FC = () => {
 
             {/* Saved Orders from Firebase */}
             <div className="card border-0 shadow-sm">
-                <div className="card-header bg-white py-3 border-0">
-                    <h5 className="mb-0 fw-bold">Saved Orders ({firestoreLoading ? '...' : savedOrders.length})</h5>
+                <div className="card-header bg-white py-3 border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <h5 className="mb-0 fw-bold">Saved Orders ({firestoreLoading ? '...' : filteredOrders.length})</h5>
+                    <div className="position-relative" style={{ minWidth: '300px' }}>
+                        <div className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary">
+                            <Search size={18} />
+                        </div>
+                        <input
+                            type="text"
+                            className="form-control ps-5 pe-5 py-2 rounded-pill border-light bg-light"
+                            placeholder="Search Order ID, SKU, Item ID..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1); // Reset to first page on search
+                            }}
+                        />
+                        {searchTerm && (
+                            <button
+                                className="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 text-secondary p-0"
+                                onClick={() => setSearchTerm('')}
+                            >
+                                <X size={18} />
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="card-body p-0">
                     {firestoreLoading ? (
@@ -364,7 +399,7 @@ const FlipkartReport: React.FC = () => {
                     ) : savedOrders.length === 0 ? (
                         <div className="text-center py-5 text-secondary">
                             <FileSpreadsheet size={48} className="mb-3 opacity-50" />
-                            <p>No saved orders yet. Upload and save an Excel file to get started.</p>
+                            <p>{searchTerm ? 'No orders match your search criteria.' : 'No saved orders yet. Upload and save an Excel file to get started.'}</p>
                         </div>
                     ) : (
                         <div className="table-responsive">
@@ -460,7 +495,7 @@ const FlipkartReport: React.FC = () => {
                 {savedOrders.length > ITEMS_PER_PAGE && (
                     <div className="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center border-top">
                         <div className="text-secondary small">
-                            Showing <span className="fw-bold">{startIndex + 1}</span> to <span className="fw-bold">{Math.min(startIndex + ITEMS_PER_PAGE, savedOrders.length)}</span> of <span className="fw-bold">{savedOrders.length}</span> orders
+                            Showing <span className="fw-bold">{filteredOrders.length > 0 ? startIndex + 1 : 0}</span> to <span className="fw-bold">{Math.min(startIndex + ITEMS_PER_PAGE, filteredOrders.length)}</span> of <span className="fw-bold">{filteredOrders.length}</span> orders
                         </div>
                         <nav>
                             <ul className="pagination pagination-sm mb-0 gap-1">

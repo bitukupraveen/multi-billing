@@ -12,7 +12,7 @@ const Dashboard: React.FC = () => {
     const stats = useMemo(() => {
         if (!flipkartOrders.length && !meeshoOrders.length) return null;
 
-        const initStats = () => ({ sales: 0, profit: 0, loss: 0, settlement: 0, count: 0 });
+        const initStats = () => ({ sales: 0, profit: 0, loss: 0, settlement: 0, count: 0, deliveredCount: 0, rtoCount: 0, returnCount: 0 });
 
         const overall = initStats();
         const flipkart = initStats();
@@ -29,6 +29,18 @@ const Dashboard: React.FC = () => {
             flipkart.count += 1;
             if (pl > 0) flipkart.profit += pl;
             else if (pl < 0) flipkart.loss += Math.abs(pl);
+
+            // Status counts for Flipkart
+            if (order.deliveryStatus === 'Sale') {
+                flipkart.deliveredCount += 1;
+                overall.deliveredCount += 1;
+            } else if (order.deliveryStatus === 'LogisticsReturn') {
+                flipkart.rtoCount += 1;
+                overall.rtoCount += 1;
+            } else if (order.deliveryStatus === 'CustomerReturn') {
+                flipkart.returnCount += 1;
+                overall.returnCount += 1;
+            }
 
             overall.sales += s;
             overall.settlement += set;
@@ -48,6 +60,18 @@ const Dashboard: React.FC = () => {
             meesho.count += 1;
             if (pl > 0) meesho.profit += pl;
             else if (pl < 0) meesho.loss += Math.abs(pl);
+
+            // Status counts for Meesho
+            if (order.subOrderContribution === 'Delivered') {
+                meesho.deliveredCount += 1;
+                overall.deliveredCount += 1;
+            } else if (order.subOrderContribution === 'RTO') {
+                meesho.rtoCount += 1;
+                overall.rtoCount += 1;
+            } else if (order.subOrderContribution === 'Return') {
+                meesho.returnCount += 1;
+                overall.returnCount += 1;
+            }
 
             overall.sales += s;
             overall.settlement += set;
@@ -161,6 +185,73 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
+            {/* Status Percentages Cards */}
+            <div className="row g-4 mb-4">
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 border-start border-success border-4 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                <h6 className="card-subtitle fw-bold text-uppercase small text-muted mb-0">Delivered Rate</h6>
+                                <span className="badge bg-success-soft text-success">
+                                    {stats?.overall.deliveredCount || 0} Orders
+                                </span>
+                            </div>
+                            <div className="d-flex align-items-baseline gap-2">
+                                <p className="card-text h4 fw-bold mb-0">
+                                    {((stats?.overall.deliveredCount || 0) / (stats?.overall.count || 1) * 100).toFixed(1)}%
+                                </p>
+                                <small className="text-muted">of total</small>
+                            </div>
+                            <div className="progress mt-2" style={{ height: '4px' }}>
+                                <div className="progress-bar bg-success" role="progressbar" style={{ width: `${((stats?.overall.deliveredCount || 0) / (stats?.overall.count || 1) * 100)}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 border-start border-warning border-4 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                <h6 className="card-subtitle fw-bold text-uppercase small text-muted mb-0">RTO Rate</h6>
+                                <span className="badge bg-warning-soft text-warning">
+                                    {stats?.overall.rtoCount || 0} Orders
+                                </span>
+                            </div>
+                            <div className="d-flex align-items-baseline gap-2">
+                                <p className="card-text h4 fw-bold mb-0">
+                                    {((stats?.overall.rtoCount || 0) / (stats?.overall.count || 1) * 100).toFixed(1)}%
+                                </p>
+                                <small className="text-muted">of total</small>
+                            </div>
+                            <div className="progress mt-2" style={{ height: '4px' }}>
+                                <div className="progress-bar bg-warning" role="progressbar" style={{ width: `${((stats?.overall.rtoCount || 0) / (stats?.overall.count || 1) * 100)}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 border-start border-info border-4 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                <h6 className="card-subtitle fw-bold text-uppercase small text-muted mb-0">Return Rate</h6>
+                                <span className="badge bg-info-soft text-info">
+                                    {stats?.overall.returnCount || 0} Orders
+                                </span>
+                            </div>
+                            <div className="d-flex align-items-baseline gap-2">
+                                <p className="card-text h4 fw-bold mb-0">
+                                    {((stats?.overall.returnCount || 0) / (stats?.overall.count || 1) * 100).toFixed(1)}%
+                                </p>
+                                <small className="text-muted">of total</small>
+                            </div>
+                            <div className="progress mt-2" style={{ height: '4px' }}>
+                                <div className="progress-bar bg-info" role="progressbar" style={{ width: `${((stats?.overall.returnCount || 0) / (stats?.overall.count || 1) * 100)}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Channel-wise Performance */}
             <div className="row mb-4">
                 <div className="col-12">
@@ -175,6 +266,9 @@ const Dashboard: React.FC = () => {
                                         <tr>
                                             <th className="px-4 py-3 text-secondary text-uppercase small fw-bold">Channel</th>
                                             <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Orders</th>
+                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Delivered</th>
+                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">RTO</th>
+                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Return</th>
                                             <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Sales</th>
                                             <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Profit</th>
                                             <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Loss</th>
@@ -191,6 +285,18 @@ const Dashboard: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">{stats?.flipkart.count || 0}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-success fw-medium">{stats?.flipkart.deliveredCount || 0}</span>
+                                                <div className="small text-muted">({((stats?.flipkart.deliveredCount || 0) / (stats?.flipkart.count || 1) * 100).toFixed(0)}%)</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-warning fw-medium">{stats?.flipkart.rtoCount || 0}</span>
+                                                <div className="small text-muted">({((stats?.flipkart.rtoCount || 0) / (stats?.flipkart.count || 1) * 100).toFixed(0)}%)</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-info fw-medium">{stats?.flipkart.returnCount || 0}</span>
+                                                <div className="small text-muted">({((stats?.flipkart.returnCount || 0) / (stats?.flipkart.count || 1) * 100).toFixed(0)}%)</div>
+                                            </td>
                                             <td className="px-4 py-3 text-end fw-medium">₹{stats?.flipkart.sales.toLocaleString('en-IN') || '0.00'}</td>
                                             <td className="px-4 py-3 text-end text-success fw-medium">₹{stats?.flipkart.profit.toLocaleString('en-IN') || '0.00'}</td>
                                             <td className="px-4 py-3 text-end text-danger fw-medium">₹{stats?.flipkart.loss.toLocaleString('en-IN') || '0.00'}</td>
@@ -205,6 +311,18 @@ const Dashboard: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">{stats?.meesho.count || 0}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-success fw-medium">{stats?.meesho.deliveredCount || 0}</span>
+                                                <div className="small text-muted">({((stats?.meesho.deliveredCount || 0) / (stats?.meesho.count || 1) * 100).toFixed(0)}%)</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-warning fw-medium">{stats?.meesho.rtoCount || 0}</span>
+                                                <div className="small text-muted">({((stats?.meesho.rtoCount || 0) / (stats?.meesho.count || 1) * 100).toFixed(0)}%)</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-info fw-medium">{stats?.meesho.returnCount || 0}</span>
+                                                <div className="small text-muted">({((stats?.meesho.returnCount || 0) / (stats?.meesho.count || 1) * 100).toFixed(0)}%)</div>
+                                            </td>
                                             <td className="px-4 py-3 text-end fw-medium">₹{stats?.meesho.sales.toLocaleString('en-IN') || '0.00'}</td>
                                             <td className="px-4 py-3 text-end text-success fw-medium">₹{stats?.meesho.profit.toLocaleString('en-IN') || '0.00'}</td>
                                             <td className="px-4 py-3 text-end text-danger fw-medium">₹{stats?.meesho.loss.toLocaleString('en-IN') || '0.00'}</td>

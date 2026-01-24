@@ -8,7 +8,9 @@ import PurchaseBillsList from './pages/PurchaseBillsList';
 
 import Invoices from './pages/Invoices';
 import FlipkartReport from './pages/FlipkartReport';
+import FlipkartNet from './pages/FlipkartNet';
 import MeeshoReport from './pages/MeeshoReport';
+import SimpleElectronics from './pages/SimpleElectronics';
 
 function App() {
   return (
@@ -22,7 +24,9 @@ function App() {
           <Route path="/purchase-bills" element={<PurchaseBillsList />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/flipkart-report" element={<FlipkartReport />} />
+          <Route path="/flipkart-net" element={<FlipkartNet />} />
           <Route path="/meesho-report" element={<MeeshoReport />} />
+          <Route path="/simple-electronics" element={<SimpleElectronics />} />
         </Routes>
       </Layout>
     </Router>

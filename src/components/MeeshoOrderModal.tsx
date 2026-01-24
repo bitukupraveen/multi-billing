@@ -43,7 +43,8 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({
             shippingRevenue: 0,
             salesReturns: 0,
             shippingReturns: 0,
-            forwardShippingRecovery: 0
+            forwardShippingRecovery: 0,
+            totalSaleAmount: 0
         },
         deductions: {
             meeshoCommission: 0,
@@ -91,8 +92,8 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({
                 // Bank Settlement = Sale Revenue - (TCS Input Credits + TDS Deduction)
                 bankSettlement = revenue.saleRevenue - (settlement.tcsInputCredits + settlement.tdsDeduction);
 
-                // GST = Sale Revenue (extract only the GST value based on GST Rate)
-                calculatedGst = (revenue.saleRevenue * gstRate) / (100 + gstRate);
+                // GST = Total Sale Amount (extract only the GST value based on GST Rate)
+                calculatedGst = ((revenue.totalSaleAmount || 0) * gstRate) / (100 + gstRate);
 
                 // Profit/Loss = Bank Settlement - Product Cost
                 profitLoss = bankSettlement - productCostTotal;
@@ -127,6 +128,7 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({
         calculateCalculations();
     }, [
         formData.revenue.saleRevenue,
+        formData.revenue.totalSaleAmount,
         formData.revenue.shippingRevenue,
         formData.revenue.salesReturns,
         formData.revenue.shippingReturns,
@@ -160,7 +162,7 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({
                 [section]: {
                     ...(prev[section as keyof MeeshoOrder] as object),
                     [field]: ['quantity', 'productCost', 'gstRate', 'saleRevenue', 'shippingRevenue', 'salesReturns',
-                        'shippingReturns', 'forwardShippingRecovery', 'meeshoCommission', 'warehousingFee', 'shippingCharge',
+                        'shippingReturns', 'forwardShippingRecovery', 'totalSaleAmount', 'meeshoCommission', 'warehousingFee', 'shippingCharge',
                         'returnShippingCharge', 'tcsInputCredits', 'tdsDeduction'].includes(field)
                         ? Number(value)
                         : value
@@ -411,6 +413,18 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({
                         {/* Total Revenue */}
                         <h6 className="fw-bold text-primary mb-3">Total Revenue (Incl. GST)</h6>
                         <div className="row g-3 mb-4">
+
+                            <div className="col-md-3">
+                                <label className="form-label fw-medium small">Total Sale Amount (₹)</label>
+                                <input
+                                    type="number"
+                                    name="revenue.totalSaleAmount"
+                                    className="form-control form-control-sm"
+                                    value={formData.revenue.totalSaleAmount || 0}
+                                    onChange={handleChange}
+                                    disabled={isViewMode}
+                                />
+                            </div>
                             <div className="col-md-3">
                                 <label className="form-label fw-medium small">Sale Revenue (₹)</label>
                                 <input

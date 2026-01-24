@@ -140,6 +140,7 @@ export interface MeeshoOrder {
         salesReturns: number;
         shippingReturns: number;
         forwardShippingRecovery: number;
+        totalSaleAmount?: number;
     };
     deductions: {
         meeshoCommission: number;

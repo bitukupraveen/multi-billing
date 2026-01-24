@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, FileText, ShoppingCart, Menu, X, Truck, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, ShoppingCart, Menu, X, Truck, FileSpreadsheet, RefreshCw } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
@@ -13,8 +13,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { name: 'Purchase Bill', path: '/purchase-billing', icon: Truck },
         { name: 'Purchase History', path: '/purchase-bills', icon: FileText },
         { name: 'Invoices', path: '/invoices', icon: FileText },
+        { name: 'Flipkart Net', path: '/flipkart-net', icon: RefreshCw },
         { name: 'Flipkart Report', path: '/flipkart-report', icon: FileSpreadsheet },
         { name: 'Meesho Report', path: '/meesho-report', icon: FileSpreadsheet },
+        { name: 'Simple Electronics', path: '/simple-electronics', icon: ShoppingCart },
     ];
 
     const handleToggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
