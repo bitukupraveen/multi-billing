@@ -303,10 +303,31 @@ const MeeshoReport: React.FC = () => {
                         disabled={savedOrders.length === 0}
                     >
                         <Download size={18} />
-                        Export
+                        Export to Excel
                     </button>
                 </div>
             </div>
+
+            {/* Error State Section */}
+            {error && (
+                <div className="alert alert-danger border-0 shadow-sm mb-4 d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                        <div className="bg-danger bg-opacity-10 p-2 rounded-circle me-3">
+                            <AlertCircle size={20} className="text-danger" />
+                        </div>
+                        <div>
+                            <h6 className="alert-heading mb-1 fw-bold">Error Occurred</h6>
+                            <p className="mb-0 small">{error}</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        className="btn-close"
+                        onClick={() => setError(null)}
+                        aria-label="Close"
+                    ></button>
+                </div>
+            )}
 
             {/* Upload Section */}
             <div className="card border-0 shadow-sm mb-4">
@@ -433,60 +454,85 @@ const MeeshoReport: React.FC = () => {
                 <div className="card-body p-0">
                     {firestoreLoading ? (
                         <div className="text-center py-5">
-                            <Loader size={32} className="spinner-border text-primary" />
-                            <p className="mt-3 text-secondary">Loading orders...</p>
+                            <div className="spinner-border text-primary mb-3" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+                            <p className="text-secondary fw-medium">Fetching orders from Firestore...</p>
                         </div>
                     ) : savedOrders.length === 0 ? (
-                        <div className="text-center py-5 text-secondary">
-                            <FileSpreadsheet size={48} className="mb-3 opacity-50" />
-                            <p>{searchTerm ? 'No orders match your search criteria.' : 'No orders found. Click "Add New Order" to create one.'}</p>
+                        <div className="text-center py-5 px-4">
+                            <div className="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                                <FileSpreadsheet size={48} className="text-muted opacity-50" />
+                            </div>
+                            <h5 className="fw-bold text-gray-800 mb-2">No Meesho Orders Found</h5>
+                            <p className="text-secondary mb-4 mx-auto" style={{ maxWidth: '400px' }}>
+                                {searchTerm
+                                    ? `No orders match your search "${searchTerm}". Try a different term or clear the search.`
+                                    : 'You haven\'t added any Meesho orders yet. Upload an Excel file or add one manually to get started.'}
+                            </p>
+                            {!searchTerm ? (
+                                <div className="d-flex gap-2 justify-content-center">
+                                    <label htmlFor="excel-upload" className="btn btn-primary px-4">
+                                        <Upload size={18} className="me-2" />
+                                        Upload Excel
+                                    </label>
+                                    <button className="btn btn-outline-primary px-4" onClick={handleAdd}>
+                                        <Plus size={18} className="me-2" />
+                                        Add Manually
+                                    </button>
+                                </div>
+                            ) : (
+                                <button className="btn btn-link text-primary" onClick={() => setSearchTerm('')}>
+                                    Clear Search
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="table-responsive">
                             <table className="table table-hover align-middle mb-0 small text-nowrap">
                                 <thead className="bg-light">
                                     <tr>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">Order ID</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">Sub Order ID</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">SKU</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">Qty</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">Contribution</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold text-end">Settlement</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold text-end">GST</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold text-end">Profit/Loss</th>
-                                        <th className="px-3 py-3 text-secondary text-uppercase small fw-bold text-center">Actions</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Order ID</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Sub Order ID</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">SKU</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Qty</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Contribution</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">Settlement</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">GST</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">P/L</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedOrders.map((order) => (
                                         <tr key={order.id}>
-                                            <td className="px-3 py-3">{order.orderId}</td>
-                                            <td className="px-3 py-3">{order.subOrderId}</td>
-                                            <td className="px-3 py-3">{order.productDetails.skuCode}</td>
-                                            <td className="px-3 py-3">{order.productDetails.quantity}</td>
-                                            <td className="px-3 py-3">
+                                            <td className="px-3 py-2">{order.orderId || '-'}</td>
+                                            <td className="px-3 py-2">{order.subOrderId || '-'}</td>
+                                            <td className="px-3 py-2">{order.productDetails.skuCode || '-'}</td>
+                                            <td className="px-3 py-2">{order.productDetails.quantity || 0}</td>
+                                            <td className="px-3 py-2">
                                                 <span className={`badge ${order.subOrderContribution === 'Delivered' ? 'bg-success' :
                                                     order.subOrderContribution === 'RTO' ? 'bg-warning' : 'bg-danger'
                                                     }`}>
-                                                    {order.subOrderContribution}
+                                                    {order.subOrderContribution || 'N/A'}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-3 text-end fw-bold">₹{order.summary.bankSettlement.toFixed(2)}</td>
-                                            <td className="px-3 py-3 text-end fw-medium text-primary">₹{(order.summary.gst || 0).toFixed(2)}</td>
-                                            <td className="px-3 py-3 text-end fw-bold">
-                                                <span className={order.summary.profitLoss >= 0 ? 'text-success' : 'text-danger'}>
-                                                    ₹{order.summary.profitLoss.toFixed(2)}
+                                            <td className="px-3 py-2 text-end">₹{order.summary.bankSettlement?.toFixed(2) || '0.00'}</td>
+                                            <td className="px-3 py-2 text-end text-primary">₹{(order.summary.gst || 0).toFixed(2)}</td>
+                                            <td className="px-3 py-2 text-end">
+                                                <span className={order.summary.profitLoss && order.summary.profitLoss >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}>
+                                                    ₹{order.summary.profitLoss?.toFixed(2) || '0.00'}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-3 text-center">
+                                            <td className="px-3 py-2 text-center">
                                                 <div className="d-flex gap-1 justify-content-center">
-                                                    <button className="btn btn-sm btn-outline-primary p-1" onClick={() => handleView(order)} title="View">
+                                                    <button className="btn btn-sm btn-outline-primary p-1" onClick={() => handleView(order)} title="View Detail">
                                                         <Eye size={14} />
                                                     </button>
-                                                    <button className="btn btn-sm btn-outline-success p-1" onClick={() => handleEdit(order)} title="Edit">
+                                                    <button className="btn btn-sm btn-outline-success p-1" onClick={() => handleEdit(order)} title="Edit Record">
                                                         <Edit2 size={14} />
                                                     </button>
-                                                    <button className="btn btn-sm btn-outline-danger p-1" onClick={() => handleDelete(order)} title="Delete">
+                                                    <button className="btn btn-sm btn-outline-danger p-1" onClick={() => handleDelete(order)} title="Delete Record">
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
@@ -501,26 +547,51 @@ const MeeshoReport: React.FC = () => {
 
                 {/* Pagination Controls */}
                 {!firestoreLoading && savedOrders.length > ITEMS_PER_PAGE && (
-                    <div className="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center border-top">
+                    <div className="card-footer bg-white border-0 py-3 d-flex flex-column flex-md-row justify-content-between align-items-center border-top gap-3">
                         <div className="text-secondary small">
-                            Showing <span className="fw-bold">{filteredOrders.length > 0 ? startIndex + 1 : 0}</span> to <span className="fw-bold">{Math.min(startIndex + ITEMS_PER_PAGE, filteredOrders.length)}</span> of <span className="fw-bold">{filteredOrders.length}</span> orders
+                            Showing <span className="fw-bold text-dark">{filteredOrders.length > 0 ? startIndex + 1 : 0}</span> to <span className="fw-bold text-dark">{Math.min(startIndex + ITEMS_PER_PAGE, filteredOrders.length)}</span> of <span className="fw-bold text-dark">{filteredOrders.length}</span> orders
                         </div>
                         <nav>
                             <ul className="pagination pagination-sm mb-0 gap-1">
                                 <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                    <button className="page-link rounded border-0" onClick={() => handlePageChange(currentPage - 1)}>
+                                    <button className="page-link rounded border-0 shadow-none" onClick={() => handlePageChange(currentPage - 1)}>
                                         <ChevronLeft size={16} />
                                     </button>
                                 </li>
-                                {[...Array(totalPages)].map((_, i) => (
-                                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
-                                        <button className={`page-link rounded border-0 ${currentPage === i + 1 ? 'bg-primary text-white' : ''}`} onClick={() => handlePageChange(i + 1)}>
-                                            {i + 1}
-                                        </button>
-                                    </li>
-                                ))}
+
+                                {[...Array(totalPages)].map((_, i) => {
+                                    const pageNum = i + 1;
+                                    // Show first, last, and pages around current
+                                    if (
+                                        pageNum === 1 ||
+                                        pageNum === totalPages ||
+                                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                                    ) {
+                                        return (
+                                            <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                                                <button
+                                                    className={`page-link rounded border-0 shadow-none ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-white text-dark'}`}
+                                                    onClick={() => handlePageChange(pageNum)}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            </li>
+                                        );
+                                    } else if (
+                                        pageNum === currentPage - 2 ||
+                                        pageNum === currentPage + 2
+                                    ) {
+                                        return (
+                                            <li key={pageNum} className="page-item disabled">
+                                                <span className="page-link border-0 bg-transparent">...</span>
+                                            </li>
+                                        );
+                                    }
+                                    return null;
+                                })}
+
                                 <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                    <button className="page-link rounded border-0" onClick={() => handlePageChange(currentPage + 1)}>
+                                    <button className="page-link rounded border-0 shadow-none" onClick={() => handlePageChange(currentPage + 1)}>
                                         <ChevronRight size={16} />
                                     </button>
                                 </li>
