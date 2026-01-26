@@ -22,6 +22,7 @@ const FlipkartReport: React.FC = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<FlipkartOrder | null>(null);
     const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -196,6 +197,52 @@ const FlipkartReport: React.FC = () => {
         }
     };
 
+    const handleToggleSelectAll = () => {
+        if (selectedIds.size === paginatedOrders.length && paginatedOrders.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            const newSelection = new Set(selectedIds);
+            paginatedOrders.forEach(order => {
+                if (order.id) newSelection.add(order.id);
+            });
+            setSelectedIds(newSelection);
+        }
+    };
+
+    const handleToggleSelect = (id: string) => {
+        const newSelection = new Set(selectedIds);
+        if (newSelection.has(id)) {
+            newSelection.delete(id);
+        } else {
+            newSelection.add(id);
+        }
+        setSelectedIds(newSelection);
+    };
+
+    const handleBulkDelete = async () => {
+        const count = selectedIds.size;
+        if (count === 0) return;
+
+        const confirmed = window.confirm(`Are you sure you want to delete ${count} selected orders?`);
+        if (!confirmed) return;
+
+        setSaving(true);
+        setError(null);
+        try {
+            for (const id of Array.from(selectedIds)) {
+                await remove(id);
+            }
+            setSelectedIds(new Set());
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (err: any) {
+            console.error("Error deleting orders:", err);
+            setError(`Failed to delete some orders: ${err.message || 'Unknown error'}`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleExportExcel = () => {
         if (savedOrders.length === 0) return;
 
@@ -366,28 +413,40 @@ const FlipkartReport: React.FC = () => {
             <div className="card border-0 shadow-sm">
                 <div className="card-header bg-white py-3 border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <h5 className="mb-0 fw-bold">Saved Orders ({firestoreLoading ? '...' : filteredOrders.length})</h5>
-                    <div className="position-relative" style={{ minWidth: '300px' }}>
-                        <div className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary">
-                            <Search size={18} />
-                        </div>
-                        <input
-                            type="text"
-                            className="form-control ps-5 pe-5 py-2 rounded-pill border-light bg-light"
-                            placeholder="Search Order ID, SKU, Item ID..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setCurrentPage(1); // Reset to first page on search
-                            }}
-                        />
-                        {searchTerm && (
+                    <div className="d-flex align-items-center gap-3">
+                        {selectedIds.size > 0 && (
                             <button
-                                className="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 text-secondary p-0"
-                                onClick={() => setSearchTerm('')}
+                                className="btn btn-danger d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill shadow-sm"
+                                onClick={handleBulkDelete}
+                                disabled={saving}
                             >
-                                <X size={18} />
+                                <Trash2 size={16} />
+                                <span>Delete Selected ({selectedIds.size})</span>
                             </button>
                         )}
+                        <div className="position-relative" style={{ minWidth: '300px' }}>
+                            <div className="position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary">
+                                <Search size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                className="form-control ps-5 pe-5 py-2 rounded-pill border-light bg-light"
+                                placeholder="Search Order ID, SKU, Item ID..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1); // Reset to first page on search
+                                }}
+                            />
+                            {searchTerm && (
+                                <button
+                                    className="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 text-secondary p-0"
+                                    onClick={() => setSearchTerm('')}
+                                >
+                                    <X size={18} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div className="card-body p-0">
@@ -406,10 +465,18 @@ const FlipkartReport: React.FC = () => {
                             <table className="table table-hover align-middle mb-0 small">
                                 <thead className="bg-light">
                                     <tr>
+                                        <th className="px-3 py-2 text-center" style={{ width: '40px' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="form-check-input"
+                                                checked={paginatedOrders.length > 0 && paginatedOrders.every(o => o.id && selectedIds.has(o.id))}
+                                                onChange={handleToggleSelectAll}
+                                            />
+                                        </th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Order ID</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Item ID</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">SKU</th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Qty</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-center">Qty</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Payment</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Seller Price</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Fees</th>
@@ -423,11 +490,19 @@ const FlipkartReport: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {paginatedOrders.map((order) => (
-                                        <tr key={order.id}>
+                                        <tr key={order.id} className={order.id && selectedIds.has(order.id) ? 'bg-primary bg-opacity-10' : ''}>
+                                            <td className="px-3 py-2 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="form-check-input"
+                                                    checked={order.id ? selectedIds.has(order.id) : false}
+                                                    onChange={() => order.id && handleToggleSelect(order.id)}
+                                                />
+                                            </td>
                                             <td className="px-3 py-2">{order.orderId || '-'}</td>
                                             <td className="px-3 py-2">{order.orderItemId || '-'}</td>
                                             <td className="px-3 py-2">{order.sku || '-'}</td>
-                                            <td className="px-3 py-2">{order.quantity || 0}</td>
+                                            <td className="px-3 py-2 text-center">{order.quantity || 0}</td>
                                             <td className="px-3 py-2">
                                                 <span className={`badge ${order.paymentMode === 'Prepaid' ? 'bg-success' : 'bg-warning'}`}>
                                                     {order.paymentMode || 'N/A'}

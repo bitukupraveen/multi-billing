@@ -91,7 +91,7 @@ const FlipkartOrderModal: React.FC<FlipkartOrderModalProps> = ({
                     profitLoss = bankSettlement - productCostQuantity;
                 }
                 if (deliveryStatus === 'LogisticsReturn') {
-                    bankSettlement = (orderItemValue) - (refundAmount + customerLogisticsFee + marketplaceFees + gstOnFees);
+                    bankSettlement = (sellerPrice) - (refundAmount + marketplaceFees + gstOnFees);
                     profitLoss = bankSettlement;
                 }
             } else if (deliveryStatus === 'Cancellation') {
