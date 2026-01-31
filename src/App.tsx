@@ -8,9 +8,10 @@ import PurchaseBillsList from './pages/PurchaseBillsList';
 
 import Invoices from './pages/Invoices';
 import FlipkartReport from './pages/FlipkartReport';
-import FlipkartNet from './pages/FlipkartNet';
+import FlipkartGSTReport from './pages/FlipkartGSTReport';
+import FlipkartCashBackReport from './pages/FlipkartCashBackReport';
+import FlipkartDashboard from './pages/FlipkartDashboard';
 import MeeshoReport from './pages/MeeshoReport';
-import SimpleElectronics from './pages/SimpleElectronics';
 
 function App() {
   return (
@@ -24,9 +25,10 @@ function App() {
           <Route path="/purchase-bills" element={<PurchaseBillsList />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/flipkart-report" element={<FlipkartReport />} />
-          <Route path="/flipkart-net" element={<FlipkartNet />} />
+          <Route path="/flipkart-gst-report" element={<FlipkartGSTReport />} />
+          <Route path="/flipkart-cashback-report" element={<FlipkartCashBackReport />} />
+          <Route path="/flipkart-dashboard" element={<FlipkartDashboard />} />
           <Route path="/meesho-report" element={<MeeshoReport />} />
-          <Route path="/simple-electronics" element={<SimpleElectronics />} />
         </Routes>
       </Layout>
     </Router>

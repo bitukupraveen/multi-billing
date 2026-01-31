@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, FileText, ShoppingCart, Menu, X, Truck, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, ShoppingCart, Menu, X, Truck, FileSpreadsheet, ChevronDown, ChevronRight } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(window.innerWidth >= 992);
@@ -27,18 +27,73 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }
     }, [location.pathname]);
 
-    const navItems = [
-        { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-        { name: 'Products', path: '/products', icon: Package },
-        { name: 'Billing', path: '/billing', icon: ShoppingCart },
-        { name: 'Purchase Bill', path: '/purchase-billing', icon: Truck },
-        { name: 'Purchase History', path: '/purchase-bills', icon: FileText },
-        { name: 'Invoices', path: '/invoices', icon: FileText },
-        { name: 'Flipkart Net', path: '/flipkart-net', icon: RefreshCw },
-        { name: 'Flipkart Report', path: '/flipkart-report', icon: FileSpreadsheet },
-        { name: 'Meesho Report', path: '/meesho-report', icon: FileSpreadsheet },
-        { name: 'Simple Electronics', path: '/simple-electronics', icon: ShoppingCart },
+    const navSections = [
+        {
+            title: 'General',
+            id: 'general',
+            items: [
+                { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+                { name: 'Products', path: '/products', icon: Package },
+            ]
+        },
+        {
+            title: 'Billing & Offline',
+            id: 'billing',
+            items: [
+                { name: 'Billing', path: '/billing', icon: ShoppingCart },
+                { name: 'Purchase Bill', path: '/purchase-billing', icon: Truck },
+                { name: 'Purchase History', path: '/purchase-bills', icon: FileText },
+                { name: 'Invoices', path: '/invoices', icon: FileText },
+            ]
+        },
+        {
+            title: 'Flipkart',
+            id: 'flipkart',
+            items: [
+                { name: 'Flipkart Dashboard', path: '/flipkart-dashboard', icon: LayoutDashboard },
+                { name: 'Flipkart Report', path: '/flipkart-report', icon: FileSpreadsheet },
+                { name: 'Flipkart GST Report', path: '/flipkart-gst-report', icon: FileSpreadsheet },
+                { name: 'Cash Back Report', path: '/flipkart-cashback-report', icon: FileSpreadsheet },
+            ]
+        },
+        {
+            title: 'Meesho',
+            id: 'meesho',
+            items: [
+                { name: 'Meesho Report', path: '/meesho-report', icon: FileSpreadsheet },
+            ]
+        },
     ];
+
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+        const initialStates: Record<string, boolean> = {};
+        navSections.forEach(section => {
+            const hasActiveItem = section.items.some(item => location.pathname === item.path);
+            initialStates[section.id] = hasActiveItem;
+        });
+        // Default first section to open if none are active
+        if (!Object.values(initialStates).some(v => v)) {
+            initialStates['general'] = true;
+        }
+        return initialStates;
+    });
+
+    const toggleSection = (id: string) => {
+        setOpenSections(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
+    };
+
+    // Auto-open section when path changes
+    useEffect(() => {
+        navSections.forEach(section => {
+            const hasActiveItem = section.items.some(item => location.pathname === item.path);
+            if (hasActiveItem && !openSections[section.id]) {
+                setOpenSections(prev => ({ ...prev, [section.id]: true }));
+            }
+        });
+    }, [location.pathname]);
 
     const handleToggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -67,21 +122,38 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </button>
                 </div>
 
-                <nav className="nav nav-pills flex-column p-3 gap-2 overflow-auto h-100" style={{ paddingBottom: '80px' }}>
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = location.pathname === item.path;
-
+                <nav className="nav nav-pills flex-column p-3 gap-1 overflow-auto h-100" style={{ paddingBottom: '80px' }}>
+                    {navSections.map((section) => {
+                        const isOpen = openSections[section.id];
                         return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`nav-link d-flex align-items-center gap-3 transition-all ${isActive ? 'active shadow-sm' : 'text-dark border-0'
-                                    }`}
-                            >
-                                <Icon size={20} />
-                                <span className="fw-medium">{item.name}</span>
-                            </Link>
+                            <React.Fragment key={section.id}>
+                                <button
+                                    onClick={() => toggleSection(section.id)}
+                                    className="btn btn-link text-decoration-none d-flex align-items-center justify-content-between text-uppercase small fw-bold text-secondary mt-3 mb-1 px-2 border-0 w-100 text-start"
+                                >
+                                    <span>{section.title}</span>
+                                    {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                </button>
+                                <div className={`transition-all overflow-hidden ${isOpen ? 'opacity-100' : 'opacity-0'}`} style={{ maxHeight: isOpen ? '500px' : '0' }}>
+                                    {section.items.map((item) => {
+                                        const Icon = item.icon;
+                                        const isActive = (location.pathname + location.search) === item.path;
+
+                                        return (
+                                            <Link
+                                                key={item.path}
+                                                to={item.path}
+                                                className={`nav-link d-flex align-items-center gap-3 transition-all mb-1 ${isActive ? 'active shadow-sm' : 'text-dark border-0'
+                                                    }`}
+                                                style={{ padding: '8px 12px' }}
+                                            >
+                                                <Icon size={18} />
+                                                <span className="fw-medium">{item.name}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </React.Fragment>
                         );
                     })}
                 </nav>
