@@ -12,6 +12,9 @@ import FlipkartGSTReport from './pages/FlipkartGSTReport';
 import FlipkartCashBackReport from './pages/FlipkartCashBackReport';
 import FlipkartDashboard from './pages/FlipkartDashboard';
 import MeeshoReport from './pages/MeeshoReport';
+import MeeshoSalesRepo from './pages/MeeshoSalesRepo';
+import MeeshoSalesReturn from './pages/MeeshoSalesReturn';
+import MeeshoDashboard from './pages/MeeshoDashboard';
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
           <Route path="/flipkart-cashback-report" element={<FlipkartCashBackReport />} />
           <Route path="/flipkart-dashboard" element={<FlipkartDashboard />} />
           <Route path="/meesho-report" element={<MeeshoReport />} />
+          <Route path="/meesho-sales-report" element={<MeeshoSalesRepo />} />
+          <Route path="/meesho-sales-return" element={<MeeshoSalesReturn />} />
+          <Route path="/meesho-dashboard" element={<MeeshoDashboard />} />
         </Routes>
       </Layout>
     </Router>

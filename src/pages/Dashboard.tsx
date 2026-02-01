@@ -1,18 +1,55 @@
 import React, { useMemo } from 'react';
 import { useFirestore } from '../hooks/useFirestore';
-import { ShoppingCart, TrendingUp, TrendingDown, Landmark, Package, History } from 'lucide-react';
-import type { FlipkartOrder, MeeshoOrder } from '../types';
+import {
+    ShoppingCart,
+    TrendingUp,
+    TrendingDown,
+    Landmark,
+    Package,
+    History,
+    BarChart3,
+    ArrowUpRight,
+    ArrowDownRight,
+    Activity,
+    AlertCircle,
+    CheckCircle2,
+    ShieldCheck
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import type {
+    FlipkartOrder,
+    MeeshoOrder,
+    FlipkartGSTReportRecord,
+    FlipkartCashBackReportRecord,
+    MeeshoSalesRepoRecord,
+    MeeshoSalesReturnRecord
+} from '../types';
 
 const Dashboard: React.FC = () => {
     const { data: flipkartOrders, loading: flipkartLoading } = useFirestore<FlipkartOrder>('flipkartOrders');
     const { data: meeshoOrders, loading: meeshoLoading } = useFirestore<MeeshoOrder>('meeshoOrders');
 
-    const loading = flipkartLoading || meeshoLoading;
+    // Additional data for cross-validation
+    const { data: flipkartGst, loading: flipkartGstLoading } = useFirestore<FlipkartGSTReportRecord>('flipkartGstReports');
+    const { data: flipkartCashback, loading: flipkartCashbackLoading } = useFirestore<FlipkartCashBackReportRecord>('flipkartCashBackReports');
+    const { data: meeshoSales, loading: meeshoSalesLoading } = useFirestore<MeeshoSalesRepoRecord>('meeshoSalesReports');
+    const { data: meeshoReturns, loading: meeshoReturnsLoading } = useFirestore<MeeshoSalesReturnRecord>('meeshoSalesReturnReports');
+
+    const loading = flipkartLoading || meeshoLoading || flipkartGstLoading || flipkartCashbackLoading || meeshoSalesLoading || meeshoReturnsLoading;
 
     const stats = useMemo(() => {
-        if (!flipkartOrders.length && !meeshoOrders.length) return null;
+        if (!flipkartOrders.length && !meeshoOrders.length && !loading) return null;
 
-        const initStats = () => ({ sales: 0, profit: 0, loss: 0, settlement: 0, count: 0, deliveredCount: 0, rtoCount: 0, returnCount: 0 });
+        const initStats = () => ({
+            sales: 0,
+            profit: 0,
+            loss: 0,
+            settlement: 0,
+            count: 0,
+            deliveredCount: 0,
+            rtoCount: 0,
+            returnCount: 0
+        });
 
         const overall = initStats();
         const flipkart = initStats();
@@ -20,8 +57,8 @@ const Dashboard: React.FC = () => {
 
         // Process Flipkart
         flipkartOrders.forEach(order => {
-            const s = (order.sellerPrice || 0);
-            const set = (order.bankSettlement || 0);
+            const s = (order.totalSaleAmount || order.saleAmount || 0);
+            const set = (order.bankSettlementValue || 0);
             const pl = order.profitLoss || 0;
 
             flipkart.sales += s;
@@ -30,14 +67,14 @@ const Dashboard: React.FC = () => {
             if (pl > 0) flipkart.profit += pl;
             else if (pl < 0) flipkart.loss += Math.abs(pl);
 
-            // Status counts for Flipkart
-            if (order.deliveryStatus === 'Sale') {
+            const status = order.itemReturnStatus || '';
+            if (!status || status === 'Delivered' || status === 'Sale') {
                 flipkart.deliveredCount += 1;
                 overall.deliveredCount += 1;
-            } else if (order.deliveryStatus === 'LogisticsReturn') {
+            } else if (status === 'Return' || status === 'LogisticsReturn' || status === 'RTO') {
                 flipkart.rtoCount += 1;
                 overall.rtoCount += 1;
-            } else if (order.deliveryStatus === 'CustomerReturn') {
+            } else if (status === 'CustomerReturn') {
                 flipkart.returnCount += 1;
                 overall.returnCount += 1;
             }
@@ -51,9 +88,9 @@ const Dashboard: React.FC = () => {
 
         // Process Meesho
         meeshoOrders.forEach(order => {
-            const s = (order.revenue.saleRevenue || 0);
-            const set = (order.summary.bankSettlement || 0);
-            const pl = order.summary.profitLoss || 0;
+            const s = (order.totalSaleAmount || 0);
+            const set = (order.finalSettlementAmount || 0);
+            const pl = order.profitLoss || 0;
 
             meesho.sales += s;
             meesho.settlement += set;
@@ -61,14 +98,14 @@ const Dashboard: React.FC = () => {
             if (pl > 0) meesho.profit += pl;
             else if (pl < 0) meesho.loss += Math.abs(pl);
 
-            // Status counts for Meesho
-            if (order.subOrderContribution === 'Delivered') {
+            const status = order.liveOrderStatus || '';
+            if (status === 'Delivered') {
                 meesho.deliveredCount += 1;
                 overall.deliveredCount += 1;
-            } else if (order.subOrderContribution === 'RTO') {
+            } else if (status === 'RTO' || status.includes('Returned to Seller')) {
                 meesho.rtoCount += 1;
                 overall.rtoCount += 1;
-            } else if (order.subOrderContribution === 'Return') {
+            } else if (status === 'Return' || status === 'Customer Return') {
                 meesho.returnCount += 1;
                 overall.returnCount += 1;
             }
@@ -84,22 +121,19 @@ const Dashboard: React.FC = () => {
         const skuMap: Record<string, { quantity: number; sales: number }> = {};
 
         flipkartOrders.forEach(order => {
-            if (!order.sku) return;
-            if (!skuMap[order.sku]) {
-                skuMap[order.sku] = { quantity: 0, sales: 0 };
-            }
-            skuMap[order.sku].quantity += (order.quantity || 0);
-            skuMap[order.sku].sales += (order.sellerPrice || 0);
+            const sku = order.sellerSku;
+            if (!sku) return;
+            if (!skuMap[sku]) skuMap[sku] = { quantity: 0, sales: 0 };
+            skuMap[sku].quantity += (order.quantity || 0);
+            skuMap[sku].sales += (order.totalSaleAmount || order.saleAmount || 0);
         });
 
         meeshoOrders.forEach(order => {
-            const sku = order.productDetails.skuCode;
+            const sku = order.supplierSku;
             if (!sku) return;
-            if (!skuMap[sku]) {
-                skuMap[sku] = { quantity: 0, sales: 0 };
-            }
-            skuMap[sku].quantity += (order.productDetails.quantity || 0);
-            skuMap[sku].sales += (order.revenue.saleRevenue || 0);
+            if (!skuMap[sku]) skuMap[sku] = { quantity: 0, sales: 0 };
+            skuMap[sku].quantity += (order.quantity || 0);
+            skuMap[sku].sales += (order.totalSaleAmount || 0);
         });
 
         const skuPerformance = Object.entries(skuMap)
@@ -107,229 +141,279 @@ const Dashboard: React.FC = () => {
             .sort((a, b) => b.sales - a.sales)
             .slice(0, 10);
 
-        // Recent Records
+        // Recent Records with enhanced date sorting
+        const getDisplayDate = (dateStr: string) => dateStr ? new Date(dateStr) : new Date(0);
+
         const recentFlipkart = flipkartOrders.map(o => ({
             id: o.id,
             channel: 'Flipkart',
             orderId: o.orderId,
-            sku: o.sku,
-            amount: o.bankSettlement,
-            date: o.uploadDate,
+            sku: o.sellerSku,
+            amount: o.bankSettlementValue,
+            date: o.orderDate || o.paymentDate || o.uploadDate,
             profitLoss: o.profitLoss
         }));
 
         const recentMeesho = meeshoOrders.map(o => ({
             id: o.id,
             channel: 'Meesho',
-            orderId: o.orderId,
-            sku: o.productDetails.skuCode,
-            amount: o.summary.bankSettlement,
-            date: o.uploadDate,
-            profitLoss: o.summary.profitLoss
+            orderId: o.subOrderNo,
+            sku: o.supplierSku,
+            amount: o.finalSettlementAmount,
+            date: o.orderDate || o.paymentDate || o.uploadDate,
+            profitLoss: o.profitLoss
         }));
 
         const recentRecords = [...recentFlipkart, ...recentMeesho]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .slice(0, 8);
+            .sort((a, b) => getDisplayDate(b.date).getTime() - getDisplayDate(a.date).getTime())
+            .slice(0, 12);
+
+        // Financial Health & Cross-Validation
+        const financial = {
+            gstLiability: 0,
+            tcsCredits: 0,
+            unverifiedGap: 0,
+            verifiedSales: 0
+        };
+
+        flipkartGst.forEach(g => {
+            financial.verifiedSales += (g.finalInvoiceAmount || 0);
+            financial.gstLiability += (g.igstAmount || 0) + (g.cgstAmount || 0) + (g.sgstAmount || 0);
+        });
+
+        meeshoSales.forEach(s => {
+            financial.verifiedSales += (s.totalInvoiceValue || 0);
+            financial.gstLiability += (s.taxAmount || 0);
+        });
+
+        flipkartCashback.forEach(c => {
+            financial.tcsCredits += (c.totalTcsDeducted || 0);
+        });
+
+        // The gap represents orders that haven't shown up in GST/Sales reports yet
+        financial.unverifiedGap = Math.abs(overall.sales - financial.verifiedSales);
 
         return {
             overall,
             flipkart,
             meesho,
             skuPerformance,
-            recentRecords
+            recentRecords,
+            financial
         };
-    }, [flipkartOrders, meeshoOrders]);
+    }, [flipkartOrders, meeshoOrders, flipkartGst, flipkartCashback, meeshoSales, meeshoReturns, loading]);
+
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center vh-100 flex-column gap-3">
+                <div className="spinner-grow text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+                <h5 className="text-secondary fw-medium animate-pulse">Analyzing Business Intelligence...</h5>
+            </div>
+        );
+    }
+
+    if (!stats) {
+        return (
+            <div className="container-fluid py-5 text-center">
+                <div className="max-w-md mx-auto py-5">
+                    <History size={80} className="text-muted mb-4 opacity-25 mx-auto" />
+                    <h2 className="fw-bold text-dark mb-3">No Operational Data</h2>
+                    <p className="text-secondary mb-5">Upload your Flipkart or Meesho reports to generate comprehensive business analytics and performance insights.</p>
+                    <div className="d-flex gap-3 justify-content-center">
+                        <Link to="/flipkart-report" className="btn btn-primary px-4 py-2 rounded-pill shadow-sm">
+                            Go to Reports
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const formatINR = (val: number) => `₹${(val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+
+    const MetricCard = ({ title, value, icon: Icon, gradient, subValue }: any) => (
+        <div className={`card dashboard-card border-0 shadow-sm overflow-hidden h-100 ${gradient} text-white`}>
+            <div className="card-body p-4 position-relative">
+                <div className="position-absolute opacity-10" style={{ right: '-15px', top: '-15px', zIndex: 0 }}>
+                    <Icon size={100} />
+                </div>
+                <div className="d-flex align-items-center gap-3 mb-3 position-relative" style={{ zIndex: 1 }}>
+                    <div className="bg-white bg-opacity-20 rounded-lg backdrop-blur-sm d-flex align-items-center justify-content-center shadow-sm" style={{ width: '40px', height: '40px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <Icon size={20} className="text-white" />
+                    </div>
+                    <h6 className="mb-0 text-uppercase fw-bold small ls-wide opacity-90" style={{ letterSpacing: '0.05rem' }}>{title}</h6>
+                </div>
+                <div className="position-relative" style={{ zIndex: 1 }}>
+                    <h2 className="display-6 fw-bold mb-1">{formatINR(value)}</h2>
+                    {subValue && <div className="small opacity-80 fw-medium">{subValue}</div>}
+                </div>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="container-fluid py-4">
-            <h1 className="h3 mb-4 fw-bold text-gray-800">Dashboard Overview - All Reports</h1>
-
-            {/* Overall Cards */}
-            <div className="row g-4 mb-4">
-                <div className="col-md-3">
-                    <div className="card shadow-sm border-0 h-100 bg-primary text-white">
-                        <div className="card-body text-center">
-                            <ShoppingCart size={24} className="mb-2 opacity-75" />
-                            <h6 className="card-subtitle fw-bold text-uppercase small opacity-75 mb-1">Total Sales</h6>
-                            <p className="card-text h3 fw-bold mb-0">₹{stats?.overall.sales.toLocaleString('en-IN') || '0.00'}</p>
-                        </div>
-                    </div>
+        <div className="container-fluid py-4 px-lg-4">
+            {/* Header Section */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5 gap-3">
+                <div>
+                    <h1 className="display-5 fw-bold text-dark mb-1">Intelligence <span className="text-primary">Overview</span></h1>
+                    <p className="text-secondary mb-0 fw-medium">Unified performance analytics across all e-commerce channels</p>
                 </div>
-                <div className="col-md-3">
-                    <div className="card shadow-sm border-0 h-100 bg-success text-white">
-                        <div className="card-body text-center">
-                            <TrendingUp size={24} className="mb-2 opacity-75" />
-                            <h6 className="card-subtitle fw-bold text-uppercase small opacity-75 mb-1">Net Profit</h6>
-                            <p className="card-text h3 fw-bold mb-0">₹{stats?.overall.profit.toLocaleString('en-IN') || '0.00'}</p>
+                <div className="d-flex gap-2">
+                    <div className="bg-white p-2 rounded-4 shadow-sm border d-flex gap-3 align-items-center px-3" style={{ height: '48px' }}>
+                        <div className="d-flex align-items-center gap-2 border-end pe-3 h-100">
+                            <div className="bg-success rounded-circle animate-pulse" style={{ width: '8px', height: '8px' }}></div>
+                            <span className="small fw-bold text-dark text-nowrap" style={{ lineHeight: 1 }}>Live Updates</span>
                         </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card shadow-sm border-0 h-100 bg-danger text-white">
-                        <div className="card-body text-center">
-                            <TrendingDown size={24} className="mb-2 opacity-75" />
-                            <h6 className="card-subtitle fw-bold text-uppercase small opacity-75 mb-1">Total Loss</h6>
-                            <p className="card-text h3 fw-bold mb-0">₹{stats?.overall.loss.toLocaleString('en-IN') || '0.00'}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card shadow-sm border-0 h-100 bg-info text-white">
-                        <div className="card-body text-center">
-                            <Landmark size={24} className="mb-2 opacity-75" />
-                            <h6 className="card-subtitle fw-bold text-uppercase small opacity-75 mb-1">Settlement</h6>
-                            <p className="card-text h3 fw-bold mb-0">₹{stats?.overall.settlement.toLocaleString('en-IN') || '0.00'}</p>
+                        <div className="d-flex align-items-center justify-content-center h-100">
+                            <BarChart3 className="text-primary" size={20} />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Status Percentages Cards */}
-            <div className="row g-4 mb-4">
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 border-start border-success border-4 h-100">
-                        <div className="card-body py-3">
-                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                <h6 className="card-subtitle fw-bold text-uppercase small text-muted mb-0">Delivered Rate</h6>
-                                <span className="badge bg-success-soft text-success">
-                                    {stats?.overall.deliveredCount || 0} Orders
-                                </span>
-                            </div>
-                            <div className="d-flex align-items-baseline gap-2">
-                                <p className="card-text h4 fw-bold mb-0">
-                                    {((stats?.overall.deliveredCount || 0) / (stats?.overall.count || 1) * 100).toFixed(1)}%
-                                </p>
-                                <small className="text-muted">of total</small>
-                            </div>
-                            <div className="progress mt-2" style={{ height: '4px' }}>
-                                <div className="progress-bar bg-success" role="progressbar" style={{ width: `${((stats?.overall.deliveredCount || 0) / (stats?.overall.count || 1) * 100)}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
+            {/* Main Stats Grid */}
+            <div className="row g-4 mb-5">
+                <div className="col-lg-3 col-md-6">
+                    <MetricCard title="Gross Sales" value={stats.overall.sales} icon={ShoppingCart} gradient="gradient-primary" subValue={`${stats.overall.count} total orders across platforms`} />
                 </div>
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 border-start border-warning border-4 h-100">
-                        <div className="card-body py-3">
-                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                <h6 className="card-subtitle fw-bold text-uppercase small text-muted mb-0">RTO Rate</h6>
-                                <span className="badge bg-warning-soft text-warning">
-                                    {stats?.overall.rtoCount || 0} Orders
-                                </span>
-                            </div>
-                            <div className="d-flex align-items-baseline gap-2">
-                                <p className="card-text h4 fw-bold mb-0">
-                                    {((stats?.overall.rtoCount || 0) / (stats?.overall.count || 1) * 100).toFixed(1)}%
-                                </p>
-                                <small className="text-muted">of total</small>
-                            </div>
-                            <div className="progress mt-2" style={{ height: '4px' }}>
-                                <div className="progress-bar bg-warning" role="progressbar" style={{ width: `${((stats?.overall.rtoCount || 0) / (stats?.overall.count || 1) * 100)}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="col-lg-3 col-md-6">
+                    <MetricCard title="Net Profit" value={stats.overall.profit} icon={TrendingUp} gradient="gradient-success" subValue={`Margin: ${((stats.overall.profit / (stats.overall.sales || 1)) * 100).toFixed(1)}%`} />
                 </div>
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 border-start border-info border-4 h-100">
-                        <div className="card-body py-3">
-                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                <h6 className="card-subtitle fw-bold text-uppercase small text-muted mb-0">Return Rate</h6>
-                                <span className="badge bg-info-soft text-info">
-                                    {stats?.overall.returnCount || 0} Orders
-                                </span>
-                            </div>
-                            <div className="d-flex align-items-baseline gap-2">
-                                <p className="card-text h4 fw-bold mb-0">
-                                    {((stats?.overall.returnCount || 0) / (stats?.overall.count || 1) * 100).toFixed(1)}%
-                                </p>
-                                <small className="text-muted">of total</small>
-                            </div>
-                            <div className="progress mt-2" style={{ height: '4px' }}>
-                                <div className="progress-bar bg-info" role="progressbar" style={{ width: `${((stats?.overall.returnCount || 0) / (stats?.overall.count || 1) * 100)}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="col-lg-3 col-md-6">
+                    <MetricCard title="Operational Loss" value={stats.overall.loss} icon={TrendingDown} gradient="gradient-danger" subValue={`Returns Impact: ${((stats.overall.loss / (stats.overall.sales || 1)) * 100).toFixed(1)}%`} />
+                </div>
+                <div className="col-lg-3 col-md-6">
+                    <MetricCard title="Bank Settlement" value={stats.overall.settlement} icon={Landmark} gradient="gradient-info" subValue={`Cash Flow Recovery: ${((stats.overall.settlement / (stats.overall.sales || 1)) * 100).toFixed(0)}%`} />
                 </div>
             </div>
 
-            {/* Channel-wise Performance */}
-            <div className="row mb-4">
-                <div className="col-12">
-                    <div className="card shadow-sm border-0">
-                        <div className="card-header bg-white border-0 py-3">
-                            <h5 className="mb-0 fw-bold">Channel-wise breakdown</h5>
+            {/* Status & Channel Section */}
+            <div className="row g-4 mb-5">
+                <div className="col-xl-8">
+                    <div className="card dashboard-card border-0 shadow-sm h-100 glass-card">
+                        <div className="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <BarChart3 size={20} className="text-primary" />
+                                Channel Performance
+                            </h5>
                         </div>
-                        <div className="card-body p-0">
+                        <div className="card-body p-4">
                             <div className="table-responsive">
                                 <table className="table table-hover align-middle mb-0">
-                                    <thead className="bg-light">
-                                        <tr>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold">Channel</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Orders</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Delivered</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">RTO</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Return</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Sales</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Profit</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Loss</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Settlement</th>
+                                    <thead className="bg-light bg-opacity-50">
+                                        <tr className="small text-uppercase text-muted fw-bold">
+                                            <th className="border-0 px-4 py-3">Platform</th>
+                                            <th className="border-0 px-4 py-3 text-center">Delivered</th>
+                                            <th className="border-0 px-4 py-3 text-center">RTO/Ret</th>
+                                            <th className="border-0 px-4 py-3 text-end">Sales</th>
+                                            <th className="border-0 px-4 py-3 text-end">Net P/L</th>
+                                            <th className="border-0 px-4 py-3 text-end">Settlement</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* Flipkart Row */}
-                                        <tr>
-                                            <td className="px-4 py-3">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <div className="bg-primary rounded-circle" style={{ width: '12px', height: '12px' }}></div>
-                                                    <span className="fw-bold">Flipkart</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">{stats?.flipkart.count || 0}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="text-success fw-medium">{stats?.flipkart.deliveredCount || 0}</span>
-                                                <div className="small text-muted">({((stats?.flipkart.deliveredCount || 0) / (stats?.flipkart.count || 1) * 100).toFixed(0)}%)</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="text-warning fw-medium">{stats?.flipkart.rtoCount || 0}</span>
-                                                <div className="small text-muted">({((stats?.flipkart.rtoCount || 0) / (stats?.flipkart.count || 1) * 100).toFixed(0)}%)</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="text-info fw-medium">{stats?.flipkart.returnCount || 0}</span>
-                                                <div className="small text-muted">({((stats?.flipkart.returnCount || 0) / (stats?.flipkart.count || 1) * 100).toFixed(0)}%)</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-end fw-medium">₹{stats?.flipkart.sales.toLocaleString('en-IN') || '0.00'}</td>
-                                            <td className="px-4 py-3 text-end text-success fw-medium">₹{stats?.flipkart.profit.toLocaleString('en-IN') || '0.00'}</td>
-                                            <td className="px-4 py-3 text-end text-danger fw-medium">₹{stats?.flipkart.loss.toLocaleString('en-IN') || '0.00'}</td>
-                                            <td className="px-4 py-3 text-end fw-bold">₹{stats?.flipkart.settlement.toLocaleString('en-IN') || '0.00'}</td>
-                                        </tr>
-                                        {/* Meesho Row */}
-                                        <tr>
-                                            <td className="px-4 py-3">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <div className="bg-danger rounded-circle" style={{ width: '12px', height: '12px' }}></div>
-                                                    <span className="fw-bold">Meesho</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">{stats?.meesho.count || 0}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="text-success fw-medium">{stats?.meesho.deliveredCount || 0}</span>
-                                                <div className="small text-muted">({((stats?.meesho.deliveredCount || 0) / (stats?.meesho.count || 1) * 100).toFixed(0)}%)</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="text-warning fw-medium">{stats?.meesho.rtoCount || 0}</span>
-                                                <div className="small text-muted">({((stats?.meesho.rtoCount || 0) / (stats?.meesho.count || 1) * 100).toFixed(0)}%)</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="text-info fw-medium">{stats?.meesho.returnCount || 0}</span>
-                                                <div className="small text-muted">({((stats?.meesho.returnCount || 0) / (stats?.meesho.count || 1) * 100).toFixed(0)}%)</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-end fw-medium">₹{stats?.meesho.sales.toLocaleString('en-IN') || '0.00'}</td>
-                                            <td className="px-4 py-3 text-end text-success fw-medium">₹{stats?.meesho.profit.toLocaleString('en-IN') || '0.00'}</td>
-                                            <td className="px-4 py-3 text-end text-danger fw-medium">₹{stats?.meesho.loss.toLocaleString('en-IN') || '0.00'}</td>
-                                            <td className="px-4 py-3 text-end fw-bold">₹{stats?.meesho.settlement.toLocaleString('en-IN') || '0.00'}</td>
-                                        </tr>
+                                        {[
+                                            { name: 'Flipkart', data: stats.flipkart, color: '#2874f0' },
+                                            { name: 'Meesho', data: stats.meesho, color: '#ff4757' }
+                                        ].map(channel => (
+                                            <tr key={channel.name}>
+                                                <td className="px-4 py-4">
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <div style={{ backgroundColor: channel.color, width: '4px', height: '24px', borderRadius: '4px' }}></div>
+                                                        <span className="fw-bold h6 mb-0">{channel.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <div className="fw-bold text-success h6 mb-0">{((channel.data.deliveredCount / (channel.data.count || 1)) * 100).toFixed(0)}%</div>
+                                                    <div className="small text-muted">{channel.data.deliveredCount} orders</div>
+                                                </td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <div className="fw-bold text-danger h6 mb-0">{(((channel.data.rtoCount + channel.data.returnCount) / (channel.data.count || 1)) * 100).toFixed(0)}%</div>
+                                                    <div className="small text-muted">{channel.data.rtoCount + channel.data.returnCount} orders</div>
+                                                </td>
+                                                <td className="px-4 py-4 text-end fw-bold">{formatINR(channel.data.sales)}</td>
+                                                <td className="px-4 py-4 text-end">
+                                                    <div className={`fw-bold h6 mb-0 ${channel.data.profit >= channel.data.loss ? 'text-success' : 'text-danger'}`}>
+                                                        {formatINR(channel.data.profit - channel.data.loss)}
+                                                    </div>
+                                                    <div className="small text-muted">Margin: {(((channel.data.profit - channel.data.loss) / (channel.data.sales || 1)) * 100).toFixed(1)}%</div>
+                                                </td>
+                                                <td className="px-4 py-4 text-end">
+                                                    <div className="fw-bold h6 mb-0">{formatINR(channel.data.settlement)}</div>
+                                                    <div className="progress mt-1" style={{ height: '3px' }}>
+                                                        <div className="progress-bar" style={{ width: `${(channel.data.settlement / (channel.data.sales || 1)) * 100}%`, backgroundColor: channel.color }}></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-xl-4">
+                    <div className="card dashboard-card border-0 shadow-sm h-100 glass-card">
+                        <div className="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <Activity size={20} className="text-primary" />
+                                Financial Health
+                            </h5>
+                        </div>
+                        <div className="card-body p-4">
+                            <div className="d-flex flex-column gap-4">
+                                <div>
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <ShieldCheck size={16} className="text-info" />
+                                            <span className="small fw-bold text-muted text-uppercase">GST Liability</span>
+                                        </div>
+                                        <span className="fw-bold text-dark">{formatINR(stats.financial.gstLiability)}</span>
+                                    </div>
+                                    <div className="progress rounded-pill bg-light" style={{ height: '6px' }}>
+                                        <div className="progress-bar bg-info" style={{ width: '70%', opacity: 0.5 }}></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <Landmark size={16} className="text-success" />
+                                            <span className="small fw-bold text-muted text-uppercase">TCS Credits</span>
+                                        </div>
+                                        <span className="fw-bold text-success">+{formatINR(stats.financial.tcsCredits)}</span>
+                                    </div>
+                                    <div className="progress rounded-pill bg-light" style={{ height: '6px' }}>
+                                        <div className="progress-bar bg-success" style={{ width: '40%', opacity: 0.5 }}></div>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 rounded-4 bg-light border-white border">
+                                    <div className="d-flex align-items-center gap-2 mb-2">
+                                        <AlertCircle size={16} className="text-warning" />
+                                        <span className="small fw-bold text-muted text-uppercase">Data Alignment</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-end">
+                                        <div>
+                                            <div className="h4 fw-bold mb-0">{((stats.financial.verifiedSales / (stats.overall.sales || 1)) * 100).toFixed(1)}%</div>
+                                            <div className="small text-muted">Verification Rate</div>
+                                        </div>
+                                        <div className="text-end">
+                                            <div className="small text-muted">Mismatch Gap</div>
+                                            <div className="fw-bold text-warning">{formatINR(stats.financial.unverifiedGap)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-center">
+                                    <div className="small text-muted mb-2">Business Health Index</div>
+                                    <div className="d-flex align-items-center justify-content-center gap-2 text-success fw-bold">
+                                        <CheckCircle2 size={18} />
+                                        <span>SYSTEM STABLE</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -337,37 +421,46 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="row g-4">
-                {/* SKU Performance */}
-                <div className="col-md-7">
-                    <div className="card shadow-sm border-0 mb-4 text-nowrap">
-                        <div className="card-header bg-white border-0 py-3 d-flex align-items-center gap-2">
-                            <Package className="text-primary" size={20} />
-                            <h5 className="mb-0 fw-bold">Combined SKU Performance</h5>
+                {/* SKU Rankings */}
+                <div className="col-lg-7">
+                    <div className="card dashboard-card border-0 shadow-sm h-100 overflow-hidden">
+                        <div className="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <Package size={20} className="text-primary" />
+                                Top Performing SKUs
+                            </h5>
                         </div>
-                        <div className="card-body p-0">
+                        <div className="card-body p-4">
                             <div className="table-responsive">
-                                <table className="table table-hover align-middle mb-0 small">
-                                    <thead className="bg-light">
+                                <table className="table table-hover align-middle mb-0">
+                                    <thead className="small text-uppercase text-muted fw-bold">
                                         <tr>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold">SKU Name</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-center">Qty Sold</th>
-                                            <th className="px-4 py-3 text-secondary text-uppercase small fw-bold text-end">Sales Value</th>
+                                            <th className="border-0 pb-3">SKU Name</th>
+                                            <th className="border-0 pb-3 text-center">Orders</th>
+                                            <th className="border-0 pb-3 text-end">Revenue</th>
+                                            <th className="border-0 pb-3 text-end">Trend</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {loading ? (
-                                            <tr><td colSpan={3} className="text-center py-4 text-secondary">Loading performance data...</td></tr>
-                                        ) : !stats?.skuPerformance.length ? (
-                                            <tr><td colSpan={3} className="text-center py-4 text-secondary text-nowrap">No data available</td></tr>
-                                        ) : (
-                                            stats.skuPerformance.map((item, idx) => (
-                                                <tr key={idx}>
-                                                    <td className="px-4 py-3 fw-medium text-truncate" style={{ maxWidth: '250px' }}>{item.sku}</td>
-                                                    <td className="px-4 py-3 text-center">{item.quantity}</td>
-                                                    <td className="px-4 py-3 text-end fw-bold">₹{item.sales.toLocaleString('en-IN')}</td>
-                                                </tr>
-                                            ))
-                                        )}
+                                        {stats.skuPerformance.map((item, idx) => (
+                                            <tr key={idx}>
+                                                <td className="py-3 px-0">
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <div className="bg-light rounded p-2 text-primary fw-bold" style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            {idx + 1}
+                                                        </div>
+                                                        <div className="fw-bold text-truncate" style={{ maxWidth: '250px' }}>{item.sku}</div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 text-center fw-medium">{item.quantity}</td>
+                                                <td className="py-3 text-end fw-bold">{formatINR(item.sales)}</td>
+                                                <td className="py-3">
+                                                    <div className="d-flex align-items-center justify-content-end">
+                                                        <ArrowUpRight className="text-success" size={18} />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -375,58 +468,61 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Recent Records */}
-                <div className="col-md-5">
-                    <div className="card shadow-sm border-0 h-100">
-                        <div className="card-header bg-white border-0 py-3 d-flex align-items-center gap-2">
-                            <History className="text-primary" size={20} />
-                            <h5 className="mb-0 fw-bold">Recent Records</h5>
+                {/* Real-time Activity */}
+                <div className="col-lg-5">
+                    <div className="card dashboard-card border-0 shadow-sm h-100 overflow-hidden">
+                        <div className="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <History size={20} className="text-primary" />
+                                Recent Activity
+                            </h5>
+                            <button className="btn btn-link text-primary text-decoration-none small fw-bold">View Ledger</button>
                         </div>
-                        <div className="card-body p-0">
-                            <div className="table-responsive">
-                                <table className="table table-hover align-middle mb-0 small text-nowrap">
-                                    <thead className="bg-light">
-                                        <tr>
-                                            <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">Order ID</th>
-                                            <th className="px-3 py-3 text-secondary text-uppercase small fw-bold">Channel</th>
-                                            <th className="px-3 py-3 text-secondary text-uppercase small fw-bold text-end">Settlement</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {loading ? (
-                                            <tr><td colSpan={3} className="text-center py-4 text-secondary">Loading records...</td></tr>
-                                        ) : !stats?.recentRecords.length ? (
-                                            <tr><td colSpan={3} className="text-center py-4 text-secondary ">No records found</td></tr>
-                                        ) : (
-                                            stats.recentRecords.map((record, idx) => (
-                                                <tr key={idx}>
-                                                    <td className="px-3 py-2">
-                                                        <div className="fw-bold text-truncate" style={{ maxWidth: '120px' }}>{record.orderId || 'N/A'}</div>
-                                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>{new Date(record.date).toLocaleDateString()}</div>
-                                                    </td>
-                                                    <td className="px-3 py-2">
-                                                        <span className={`badge ${record.channel === 'Flipkart' ? 'bg-primary' : 'bg-danger'}`}>
-                                                            {record.channel}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-3 py-2 text-end">
-                                                        <div className="fw-bold">₹{(record.amount || 0).toLocaleString('en-IN')}</div>
-                                                        <div className={`fw-bold small ${record.profitLoss && record.profitLoss >= 0 ? 'text-success' : 'text-danger'}`}>
-                                                            {record.profitLoss && record.profitLoss >= 0 ? '+' : ''}{record.profitLoss?.toLocaleString('en-IN')}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                        <div className="card-body p-4">
+                            <div className="d-flex flex-column gap-3">
+                                {stats.recentRecords.map((record, idx) => (
+                                    <div key={idx} className="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light border border-white transition-all hover-scale cursor-pointer">
+                                        <div className="d-flex align-items-center gap-3 overflow-hidden">
+                                            <div className={`p-2 rounded-lg text-white ${record.channel === 'Flipkart' ? 'bg-primary' : 'bg-danger'}`} style={{ minWidth: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {record.channel === 'Flipkart' ? 'F' : 'M'}
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <div className="fw-bold text-dark text-truncate" style={{ maxWidth: '140px' }}>ID: {record.orderId}</div>
+                                                <div className="small text-muted">{new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-end">
+                                            <div className="fw-bold text-dark">{formatINR(record.amount || 0)}</div>
+                                            {record.profitLoss !== undefined ? (
+                                                <div className={`small fw-bold d-flex align-items-center justify-content-end ${record.profitLoss >= 0 ? 'text-success' : 'text-danger'}`}>
+                                                    {record.profitLoss >= 0 ? <ArrowUpRight size={14} className="me-1" /> : <ArrowDownRight size={14} className="me-1" />}
+                                                    {Math.abs(record.profitLoss).toLocaleString('en-IN')}
+                                                </div>
+                                            ) : (
+                                                <div className="small text-muted italic">Processing...</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                .backdrop-blur-sm { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+                .ls-wide { letter-spacing: 0.05em; }
+                .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: .5; }
+                }
+                .shadow-inner { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); }
+            `}</style>
         </div>
     );
 };
 
 export default Dashboard;
+

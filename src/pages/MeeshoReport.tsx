@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Plus, Download, Eye, Edit2, Trash2, ChevronLeft, ChevronRight, Loader, FileSpreadsheet, Upload, AlertCircle, Save, CheckCircle, Search, X } from 'lucide-react';
+import { Plus, Download, Eye, Edit2, Trash2, ChevronLeft, ChevronRight, Loader, FileSpreadsheet, Upload, AlertCircle, Save, CheckCircle, Search, X, TrendingUp, DollarSign, Percent } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
 import type { MeeshoOrder } from '../types';
 import MeeshoOrderModal from '../components/MeeshoOrderModal';
@@ -62,74 +62,68 @@ const MeeshoReport: React.FC = () => {
             for (const row of parsedData) {
                 const getVal = (keys: string[]) => {
                     const foundKey = Object.keys(row).find(k =>
-                        keys.some(key => k.toLowerCase().includes(key.toLowerCase()))
+                        keys.some(key => {
+                            const normalizedKey = k.toLowerCase().replace(/[\s\(\)]/g, '');
+                            const normalizedSearch = key.toLowerCase().replace(/[\s\(\)]/g, '');
+                            return normalizedKey.includes(normalizedSearch);
+                        })
                     );
                     return foundKey ? row[foundKey] : null;
                 };
 
                 const order: Omit<MeeshoOrder, 'id'> = {
-                    channel: 'meesho',
-                    orderId: getVal(['Order ID', 'Order Number'])?.toString() || '',
-                    subOrderId: getVal(['Sub Order ID', 'Sub Order Number'])?.toString() || '',
-                    subOrderContribution: (getVal(['Contribution', 'Status', 'Sub Order Status'])?.toString().includes('RTO') ? 'RTO' :
-                        getVal(['Contribution', 'Status', 'Sub Order Status'])?.toString().includes('Return') ? 'Return' : 'Delivered') as 'Delivered' | 'RTO' | 'Return',
-                    paymentStatus: {
-                        ordered: getVal(['Ordered Date', 'Order Date'])?.toString() || '',
-                        shipped: getVal(['Shipped Date'])?.toString() || '',
-                        delivered: getVal(['Delivered Date'])?.toString() || '',
-                        returned: getVal(['Returned Date'])?.toString() || '',
-                        rto: getVal(['RTO Date'])?.toString() || '',
-                        paymentPaid: getVal(['Payment Date', 'Payment Paid Date'])?.toString() || ''
-                    },
-                    productDetails: {
-                        productName: getVal(['Product Name', 'Title'])?.toString() || '',
-                        skuCode: getVal(['SKU', 'SKU Code'])?.toString() || '',
-                        hsnCode: getVal(['HSN Code', 'HSN'])?.toString() || '',
-                        quantity: Number(getVal(['Quantity', 'Qty'])) || 0,
-                        productCost: Number(getVal(['Product Cost', 'Unit Price'])) || 0,
-                        gstRate: Number(getVal(['GST Rate', 'Tax Rate'])) || 0
-                    },
-                    revenue: {
-                        saleRevenue: Number(getVal(['Sale Revenue', 'Revenue', 'Sale Amount'])) || 0,
-                        shippingRevenue: Number(getVal(['Shipping Revenue', 'Shipping Charge'])) || 0,
-                        salesReturns: Number(getVal(['Sales Returns', 'Return Amount'])) || 0,
-                        shippingReturns: Number(getVal(['Shipping Returns'])) || 0,
-                        forwardShippingRecovery: Number(getVal(['Forward Shipping Recovery'])) || 0,
-                        totalSaleAmount: Number(getVal(['Total Sale Amount', 'Total Sale', 'Sale Amount Incl Tax'])) || 0
-                    },
-                    deductions: {
-                        meeshoCommission: Number(getVal(['Meesho Commission', 'Commission'])) || 0,
-                        warehousingFee: Number(getVal(['Warehousing Fee'])) || 0,
-                        shippingCharge: Number(getVal(['Shipping Charge'])) || 0,
-                        returnShippingCharge: Number(getVal(['Return Shipping Charge'])) || 0
-                    },
-                    settlement: {
-                        tcsInputCredits: Number(getVal(['TCS Input Credits', 'TCS'])) || 0,
-                        tdsDeduction: Number(getVal(['TDS Deduction', 'TDS'])) || 0
-                    },
-                    summary: {
-                        bankSettlement: Number(getVal(['Bank Settlement', 'Settlement Amount', 'Net Payment'])) || 0,
-                        gst: Number(getVal(['GST Amount', 'Total GST', 'GST'])) || 0,
-                        profitLoss: Number(getVal(['Profit/Loss', 'Profit', 'Loss'])) || 0
-                    },
+                    subOrderNo: getVal(['Sub Order No'])?.toString() || '',
+                    orderDate: getVal(['Order Date'])?.toString() || '',
+                    dispatchDate: getVal(['Dispatch Date'])?.toString() || '',
+                    productName: getVal(['Product Name'])?.toString() || '',
+                    supplierSku: getVal(['Supplier SKU'])?.toString() || '',
+                    catalogId: getVal(['Catalog ID'])?.toString() || '',
+                    orderSource: getVal(['Order source'])?.toString() || '',
+                    liveOrderStatus: getVal(['Live Order Status'])?.toString() || '',
+                    productGstPercentage: Number(getVal(['Product GST %'])) || 0,
+                    listingPrice: Number(getVal(['Listing Price'])) || 0,
+                    quantity: Number(getVal(['Quantity'])) || 0,
+
+                    transactionId: getVal(['Transaction ID'])?.toString() || '',
+                    paymentDate: getVal(['Payment Date'])?.toString() || '',
+                    finalSettlementAmount: Number(getVal(['Final Settlement Amount'])) || Number(getVal(['Settlement'])) || 0,
+
+                    priceType: getVal(['Price Type'])?.toString() || '',
+                    totalSaleAmount: Number(getVal(['Total Sale Amount'])) || 0,
+                    totalSaleReturnAmount: Number(getVal(['Total Sale Return Amount'])) || 0,
+                    fixedFeeRevenue: Number(getVal(['Fixed Fee'])) || 0,
+                    warehousingFeeRevenue: Number(getVal(['Warehousing fee'])) || 0,
+                    returnPremium: Number(getVal(['Return premium'])) || 0,
+                    returnPremiumOfReturn: Number(getVal(['Return premium (incl GST) of Return'])) || 0,
+
+                    meeshoCommissionPercentage: Number(getVal(['Meesho Commission Percentage'])) || 0,
+                    meeshoCommission: Number(getVal(['Meesho Commission'])) || 0,
+                    meeshoGoldPlatformFee: Number(getVal(['Meesho gold platform fee'])) || 0,
+                    meeshoMallPlatformFee: Number(getVal(['Meesho mall platform fee'])) || 0,
+                    fixedFeeDeduction: Number(getVal(['Fixed Fee'])) || 0,
+                    warehousingFeeDeduction: Number(getVal(['Warehousing fee'])) || 0,
+                    returnShippingCharge: Number(getVal(['Return Shipping Charge'])) || 0,
+                    gstCompensationPRP: Number(getVal(['GST Compensation'])) || 0,
+                    shippingCharge: Number(getVal(['Shipping Charge'])) || 0,
+
+                    otherSupportServiceCharges: Number(getVal(['Other Support Service Charges'])) || 0,
+                    waivers: Number(getVal(['Waivers'])) || 0,
+                    netOtherSupportServiceCharges: Number(getVal(['Net Other Support Service Charges'])) || 0,
+                    gstOnNetOtherSupportServiceCharges: Number(getVal(['GST on Net Other Support Service Charges'])) || 0,
+
+                    tcs: Number(getVal(['TCS'])) || 0,
+                    tdsRatePercentage: Number(getVal(['TDS Rate %'])) || 0,
+                    tds: Number(getVal(['TDS'])) || 0,
+
+                    compensation: Number(getVal(['Compensation'])) || 0,
+                    claims: Number(getVal(['Claims'])) || 0,
+                    recovery: Number(getVal(['Recovery'])) || 0,
+                    compensationReason: getVal(['Compensation Reason'])?.toString() || '',
+                    claimsReason: getVal(['Claims Reason'])?.toString() || '',
+                    recoveryReason: getVal(['Recovery Reason'])?.toString() || '',
+
                     uploadDate
                 };
-
-                // Auto-calculate GST if it's 0 and we have totalSaleAmount
-                if (order.summary.gst === 0 && (order.revenue.totalSaleAmount || 0) !== 0 && order.productDetails.gstRate !== 0) {
-                    const gstRate = order.productDetails.gstRate;
-                    order.summary.gst = Number((((order.revenue.totalSaleAmount || 0) * gstRate) / (100 + gstRate)).toFixed(2));
-                }
-
-                // Auto-calculate Profit/Loss if it's 0
-                if (order.summary.profitLoss === 0) {
-                    const productCostTotal = order.productDetails.quantity * order.productDetails.productCost;
-                    if (order.subOrderContribution === 'Delivered') {
-                        order.summary.profitLoss = Number((order.summary.bankSettlement - productCostTotal).toFixed(2));
-                    } else {
-                        order.summary.profitLoss = order.summary.bankSettlement;
-                    }
-                }
 
                 await add(order as any);
             }
@@ -147,47 +141,7 @@ const MeeshoReport: React.FC = () => {
 
     const handleAdd = () => {
         setSelectedOrder({
-            channel: 'meesho',
-            orderId: '',
-            subOrderId: '',
-            subOrderContribution: 'Delivered',
-            paymentStatus: {
-                ordered: '',
-                shipped: '',
-                delivered: '',
-                returned: '',
-                rto: '',
-                paymentPaid: ''
-            },
-            productDetails: {
-                productName: '',
-                skuCode: '',
-                hsnCode: '',
-                quantity: 0,
-                productCost: 0,
-                gstRate: 0
-            },
-            revenue: {
-                saleRevenue: 0,
-                shippingRevenue: 0,
-                salesReturns: 0,
-                shippingReturns: 0
-            },
-            deductions: {
-                meeshoCommission: 0,
-                warehousingFee: 0,
-                shippingCharge: 0,
-                returnShippingCharge: 0
-            },
-            settlement: {
-                tcsInputCredits: 0,
-                tdsDeduction: 0
-            },
-            summary: {
-                bankSettlement: 0,
-                gst: 0,
-                profitLoss: 0
-            },
+            subOrderNo: '',
             uploadDate: new Date().toISOString()
         } as MeeshoOrder);
         setModalMode('edit');
@@ -210,7 +164,7 @@ const MeeshoReport: React.FC = () => {
         if (!order.id) return;
 
         const confirmed = window.confirm(
-            `Are you sure you want to delete this order?\n\nOrder ID: ${order.orderId}\nSub Order ID: ${order.subOrderId}`
+            `Are you sure you want to delete this order?\n\nSub Order No: ${order.subOrderNo}`
         );
 
         if (confirmed) {
@@ -288,19 +242,17 @@ const MeeshoReport: React.FC = () => {
         if (savedOrders.length === 0) return;
 
         const exportData = savedOrders.map(order => ({
-            'Order ID': order.orderId,
-            'Sub Order ID': order.subOrderId,
-            'Contribution': order.subOrderContribution,
-            'Product Name': order.productDetails.productName,
-            'SKU': order.productDetails.skuCode,
-            'Qty': order.productDetails.quantity,
-            'Total Sale Amount': order.revenue.totalSaleAmount || 0,
-            'Bank Settlement': order.summary.bankSettlement,
-            'GST Amount': order.summary.gst,
-            'Profit/Loss': order.summary.profitLoss,
-            'Ordered Date': order.paymentStatus.ordered,
-            'Delivered Date': order.paymentStatus.delivered,
-            'Payment Paid Date': order.paymentStatus.paymentPaid
+            'Sub Order No': order.subOrderNo,
+            'Order Date': order.orderDate,
+            'Product Name': order.productName,
+            'SKU': order.supplierSku,
+            'Qty': order.quantity,
+            'Final Settlement': order.finalSettlementAmount,
+            'Total Sale Amount': order.totalSaleAmount,
+            'Commission': order.meeshoCommission,
+            'Shipping': order.shippingCharge,
+            'TCS': order.tcs,
+            'TDS': order.tds
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
@@ -315,9 +267,9 @@ const MeeshoReport: React.FC = () => {
         if (!searchTerm) return savedOrders;
         const lowSearch = searchTerm.toLowerCase();
         return savedOrders.filter(order =>
-            order.orderId?.toLowerCase().includes(lowSearch) ||
-            order.subOrderId?.toLowerCase().includes(lowSearch) ||
-            order.productDetails.skuCode?.toLowerCase().includes(lowSearch)
+            (order.subOrderNo || '').toLowerCase().includes(lowSearch) ||
+            (order.supplierSku || '').toLowerCase().includes(lowSearch) ||
+            (order.productName || '').toLowerCase().includes(lowSearch)
         );
     }, [savedOrders, searchTerm]);
 
@@ -338,20 +290,60 @@ const MeeshoReport: React.FC = () => {
                 <h2 className="h3 mb-0 fw-bold text-gray-800">Meesho Order Report</h2>
                 <div className="d-flex gap-2">
                     <button
-                        className="btn btn-primary d-flex align-items-center gap-2"
+                        className="btn btn-warning d-flex align-items-center gap-2"
                         onClick={handleAdd}
                     >
                         <Plus size={18} />
                         Add New Order
                     </button>
                     <button
-                        className="btn btn-outline-primary d-flex align-items-center gap-2"
+                        className="btn btn-outline-warning d-flex align-items-center gap-2"
                         onClick={handleExportExcel}
                         disabled={savedOrders.length === 0}
                     >
                         <Download size={18} />
                         Export to Excel
                     </button>
+                </div>
+            </div>
+
+            {/* Analysis Stats Cards */}
+            <div className="row g-4 mb-4">
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-primary text-white overflow-hidden">
+                        <div className="card-body p-4 position-relative">
+                            <TrendingUp className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Sales Amount</h6>
+                            <h2 className="fw-bold mb-0">₹{savedOrders.reduce((acc, o) => acc + (o.totalSaleAmount || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-success text-white overflow-hidden">
+                        <div className="card-body p-4 position-relative">
+                            <DollarSign className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Settlement</h6>
+                            <h2 className="fw-bold mb-0">₹{savedOrders.reduce((acc, o) => acc + (o.finalSettlementAmount || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-info text-white overflow-hidden">
+                        <div className="card-body p-4 position-relative">
+                            <Percent className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Commission</h6>
+                            <h2 className="fw-bold mb-0">₹{savedOrders.reduce((acc, o) => acc + (o.meeshoCommission || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-danger text-white overflow-hidden">
+                        <div className="card-body p-4 position-relative">
+                            <FileSpreadsheet className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total TCS/TDS</h6>
+                            <h2 className="fw-bold mb-0">₹{savedOrders.reduce((acc, o) => acc + (o.tcs || 0) + (o.tds || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -491,12 +483,12 @@ const MeeshoReport: React.FC = () => {
                             </div>
                             <input
                                 type="text"
-                                className="form-control ps-5 pe-5 py-2 rounded-pill border-light bg-light"
-                                placeholder="Search Order ID, Sub Order ID, SKU..."
+                                className="form-control ps-5 pe-5 py-2 rounded-pill border-light bg-light font-medium"
+                                placeholder="Search Sub Order, SKU, Product..."
                                 value={searchTerm}
                                 onChange={(e) => {
                                     setSearchTerm(e.target.value);
-                                    setCurrentPage(1); // Reset to first page on search
+                                    setCurrentPage(1);
                                 }}
                             />
                             {searchTerm && (
@@ -559,14 +551,13 @@ const MeeshoReport: React.FC = () => {
                                                 onChange={handleToggleSelectAll}
                                             />
                                         </th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Order ID</th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Sub Order ID</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Sub Order No</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">SKU</th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Qty</th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Contribution</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-center">Qty</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold">Status</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">Sale Amount</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">Settlement</th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">GST</th>
-                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">P/L</th>
+                                        <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-end">TCS/TDS</th>
                                         <th className="px-3 py-2 text-secondary text-uppercase small fw-bold text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -581,24 +572,19 @@ const MeeshoReport: React.FC = () => {
                                                     onChange={() => order.id && handleToggleSelect(order.id)}
                                                 />
                                             </td>
-                                            <td className="px-3 py-2">{order.orderId || '-'}</td>
-                                            <td className="px-3 py-2">{order.subOrderId || '-'}</td>
-                                            <td className="px-3 py-2">{order.productDetails.skuCode || '-'}</td>
-                                            <td className="px-3 py-2">{order.productDetails.quantity || 0}</td>
+                                            <td className="px-3 py-2">{order.subOrderNo || '-'}</td>
+                                            <td className="px-3 py-2 small">{order.supplierSku || '-'}</td>
+                                            <td className="px-3 py-2 text-center">{order.quantity || 0}</td>
                                             <td className="px-3 py-2">
-                                                <span className={`badge ${order.subOrderContribution === 'Delivered' ? 'bg-success' :
-                                                    order.subOrderContribution === 'RTO' ? 'bg-warning' : 'bg-danger'
+                                                <span className={`badge ${order.liveOrderStatus === 'Delivered' ? 'bg-success' :
+                                                    order.liveOrderStatus?.includes('Cancelled') ? 'bg-danger' : 'bg-warning'
                                                     }`}>
-                                                    {order.subOrderContribution || 'N/A'}
+                                                    {order.liveOrderStatus || 'N/A'}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-2 text-end">₹{order.summary.bankSettlement?.toFixed(2) || '0.00'}</td>
-                                            <td className="px-3 py-2 text-end text-primary">₹{(order.summary.gst || 0).toFixed(2)}</td>
-                                            <td className="px-3 py-2 text-end">
-                                                <span className={order.summary.profitLoss && order.summary.profitLoss >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}>
-                                                    ₹{order.summary.profitLoss?.toFixed(2) || '0.00'}
-                                                </span>
-                                            </td>
+                                            <td className="px-3 py-2 text-end">₹{order.totalSaleAmount?.toFixed(2) || '0.00'}</td>
+                                            <td className="px-3 py-2 text-end fw-bold text-success">₹{order.finalSettlementAmount?.toFixed(2) || '0.00'}</td>
+                                            <td className="px-3 py-2 text-end text-danger">₹{((order.tcs || 0) + (order.tds || 0)).toFixed(2)}</td>
                                             <td className="px-3 py-2 text-center">
                                                 <div className="d-flex gap-1 justify-content-center">
                                                     <button className="btn btn-sm btn-outline-primary p-1" onClick={() => handleView(order)} title="View Detail">

@@ -83,81 +83,159 @@ export interface PurchaseBill extends Invoice {
 
 export interface FlipkartOrder {
     id?: string;
-    channel?: string;
+    // Payment Details
+    neftId?: string;
+    neftType?: string;
+    paymentDate?: string;
+    bankSettlementValue?: number;
+    inputGstTcsCredits?: number;
+    incomeTaxCredits?: number;
+
+    // Transaction Summary
     orderId?: string;
     orderItemId?: string;
-    dispatchedDate?: string;
-    paymentDate?: string;
-    sku?: string;
+    saleAmount?: number;
+    totalOfferAmountSum?: number; // Sum in Transaction Summary
+    myShare?: number;
+    customerAddOnsAmount?: number;
+    marketplaceFee?: number;
+    taxes?: number;
+    offerAdjustmentsSum?: number; // Sum in Transaction Summary
+    protectionFund?: number;
+    refund?: number;
+
+    // Marketplace Fees
+    tier?: string;
+    commissionRate?: number;
+    commission?: number;
+    fixedFee?: number;
+    collectionFee?: number;
+    pickAndPackFee?: number;
+    shippingFee?: number;
+    reverseShippingFee?: number;
+    noCostEmiFeeReimbursement?: number;
+    installationFee?: number;
+    techVisitFee?: number;
+    uninstallationPackagingFee?: number;
+    customerAddOnsAmountRecovery?: number;
+    franchiseFee?: number;
+    shopsyMarketingFee?: number;
+    productCancellationFee?: number;
+
+    // Taxes
+    tcs?: number;
+    tds?: number;
+    gstOnMpFees?: number;
+
+    // Offer Adjustments
+    offerAmountSettledAsDiscountInMpFee?: number;
+    itemGstRate?: number;
+    discountInMpFees?: number;
+    gstOnDiscount?: number;
+    totalDiscountInMpFee?: number;
+    offerAdjustment?: number;
+
+    // Shipping Details
+    lengthBreadthHeight?: string;
+    volumetricWeight?: number;
+    chargeableWeightSource?: string;
+    chargeableWeightType?: string;
+    chargeableWtSlab?: number;
+    shippingZone?: string;
+
+    // Order Details
+    orderDate?: string;
+    dispatchDate?: string;
+    fulfilmentType?: string;
+    sellerSku?: string;
     quantity?: number;
-    paymentMode?: 'Prepaid' | 'Postpaid';
-    hsnCode?: string;
-    fromState?: string;
-    toState?: string;
-    orderItemValue?: number;
-    customerLogisticsFee?: number;
-    sellerPrice?: number;
-    marketplaceFees?: number;
-    gstOnFees?: number;
-    productCost?: number;
-    bankSettlement?: number;
-    inputGstCredit?: number;
-    tdsCredit?: number;
-    deliveryStatus?: 'Sale' | 'CustomerReturn' | 'LogisticsReturn' | 'Cancellation';
-    returnProductStatus?: 'Working' | 'Damaged';
-    refundAmount?: number;
-    totalDiscount?: number;
-    profitLoss?: number;
+    productSubCategory?: string;
+    additionalInformation?: string;
+    returnType?: string;
+    shopsyOrder?: string;
+    itemReturnStatus?: string;
+
+    // Buyer Invoice Details
+    invoiceId?: string;
+    invoiceDate?: string;
+
+    // Buyer Sale Details
+    totalSaleAmount?: number;
+    totalOfferAmount?: number;
+    freeShippingOffer?: number;
+    nonFreeShippingOffer?: number;
+
+    // My Share
+    totalMyShare?: number;
+    myShareFreeShippingOffer?: number;
+    myShareNonFreeShippingOffer?: number;
+
     uploadDate: string;
-    // Store all raw data from Excel for flexibility
+    profitLoss?: number;
     rawData?: Record<string, any>;
 }
 export interface MeeshoOrder {
     id?: string;
-    channel: string;
-    orderId: string;
-    subOrderId: string;
-    subOrderContribution: 'Delivered' | 'RTO' | 'Return';
-    paymentStatus: {
-        ordered?: string;
-        shipped?: string;
-        delivered?: string;
-        returned?: string;
-        rto?: string;
-        paymentPaid?: string;
-    };
-    productDetails: {
-        productName: string;
-        skuCode: string;
-        hsnCode: string;
-        quantity: number;
-        productCost: number;
-        gstRate: number;
-    };
-    revenue: {
-        saleRevenue: number;
-        shippingRevenue: number;
-        salesReturns: number;
-        shippingReturns: number;
-        forwardShippingRecovery: number;
-        totalSaleAmount?: number;
-    };
-    deductions: {
-        meeshoCommission: number;
-        warehousingFee: number;
-        shippingCharge: number;
-        returnShippingCharge: number;
-    };
-    settlement: {
-        tcsInputCredits: number;
-        tdsDeduction: number;
-    };
-    summary: {
-        bankSettlement: number;
-        gst: number;
-        profitLoss: number;
-    };
+    // Order Related Details
+    subOrderNo: string;
+    orderDate?: string;
+    dispatchDate?: string;
+    productName?: string;
+    supplierSku?: string;
+    catalogId?: string;
+    orderSource?: string;
+    liveOrderStatus?: string;
+    productGstPercentage?: number;
+    listingPrice?: number;
+    quantity?: number;
+
+    // Payment Details
+    transactionId?: string;
+    paymentDate?: string;
+    finalSettlementAmount?: number;
+
+    // Revenue Details
+    priceType?: string;
+    totalSaleAmount?: number;
+    totalSaleReturnAmount?: number;
+    fixedFeeRevenue?: number;
+    warehousingFeeRevenue?: number;
+    returnPremium?: number;
+    returnPremiumOfReturn?: number;
+
+    // Deductions
+    meeshoCommissionPercentage?: number;
+    meeshoCommission?: number;
+    meeshoGoldPlatformFee?: number;
+    meeshoMallPlatformFee?: number;
+    fixedFeeDeduction?: number;
+    warehousingFeeDeduction?: number;
+    returnShippingCharge?: number;
+    gstCompensationPRP?: number;
+    shippingCharge?: number;
+
+    // Other Charges
+    otherSupportServiceCharges?: number;
+    waivers?: number;
+    netOtherSupportServiceCharges?: number;
+    gstOnNetOtherSupportServiceCharges?: number;
+
+    // TCS & TDS
+    tcs?: number;
+    tdsRatePercentage?: number;
+    tds?: number;
+
+    // Compensation Details
+    compensation?: number;
+    claims?: number;
+    recovery?: number;
+    compensationReason?: string;
+    claimsReason?: string;
+    recoveryReason?: string;
+
     uploadDate: string;
+    profitLoss?: number;
+    rawData?: Record<string, any>;
 }
 
 export interface FlipkartGSTReportRecord {
@@ -259,6 +337,53 @@ export interface FlipkartCashBackReportRecord {
     irn?: string;
     businessName?: string;
     businessGstNumber?: string;
+    uploadDate: string;
+    rawData?: Record<string, any>;
+}
+
+export interface MeeshoSalesRepoRecord {
+    id?: string;
+    identifier?: string;
+    supName?: string;
+    gstin?: string;
+    subOrderNum?: string;
+    orderDate?: string;
+    hsnCode?: string;
+    quantity?: number;
+    gstRate?: number;
+    totalTaxableSaleValue?: number;
+    taxAmount?: number;
+    totalInvoiceValue?: number;
+    taxableShipping?: number;
+    endCustomerStateNew?: string;
+    enrollmentNo?: string;
+    financialYear?: string;
+    monthNumber?: number;
+    supplierId?: string;
+    uploadDate: string;
+    rawData?: Record<string, any>;
+}
+
+export interface MeeshoSalesReturnRecord {
+    id?: string;
+    identifier?: string;
+    supName?: string;
+    gstin?: string;
+    subOrderNum?: string;
+    orderDate?: string;
+    cancelReturnDate?: string;
+    hsnCode?: string;
+    quantity?: number;
+    gstRate?: number;
+    totalTaxableSaleValue?: number;
+    taxAmount?: number;
+    totalInvoiceValue?: number;
+    taxableShipping?: number;
+    endCustomerStateNew?: string;
+    enrollmentNo?: string;
+    financialYear?: string;
+    monthNumber?: number;
+    supplierId?: string;
     uploadDate: string;
     rawData?: Record<string, any>;
 }
