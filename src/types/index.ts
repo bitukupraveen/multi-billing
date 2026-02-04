@@ -85,7 +85,6 @@ export interface FlipkartOrder {
     id?: string;
     // Payment Details
     neftId?: string;
-    neftType?: string;
     paymentDate?: string;
     bankSettlementValue?: number;
     inputGstTcsCredits?: number;
@@ -95,12 +94,12 @@ export interface FlipkartOrder {
     orderId?: string;
     orderItemId?: string;
     saleAmount?: number;
-    totalOfferAmountSum?: number; // Sum in Transaction Summary
+    totalOfferAmountSum?: number;
     myShare?: number;
     customerAddOnsAmount?: number;
     marketplaceFee?: number;
     taxes?: number;
-    offerAdjustmentsSum?: number; // Sum in Transaction Summary
+    offerAdjustmentsSum?: number;
     protectionFund?: number;
     refund?: number;
 
@@ -126,6 +125,9 @@ export interface FlipkartOrder {
     tcs?: number;
     tds?: number;
     gstOnMpFees?: number;
+    igstAmount?: number;
+    cgstAmount?: number;
+    sgstAmount?: number;
 
     // Offer Adjustments
     offerAmountSettledAsDiscountInMpFee?: number;
@@ -136,6 +138,7 @@ export interface FlipkartOrder {
     offerAdjustment?: number;
 
     // Shipping Details
+    deadWeight?: number;
     lengthBreadthHeight?: string;
     volumetricWeight?: number;
     chargeableWeightSource?: string;
@@ -146,6 +149,7 @@ export interface FlipkartOrder {
     // Order Details
     orderDate?: string;
     dispatchDate?: string;
+    orderType?: string;
     fulfilmentType?: string;
     sellerSku?: string;
     quantity?: number;
@@ -154,6 +158,7 @@ export interface FlipkartOrder {
     returnType?: string;
     shopsyOrder?: string;
     itemReturnStatus?: string;
+    orderStatus?: string; // For GST Sync
 
     // Buyer Invoice Details
     invoiceId?: string;
@@ -174,6 +179,7 @@ export interface FlipkartOrder {
     profitLoss?: number;
     rawData?: Record<string, any>;
 }
+
 export interface MeeshoOrder {
     id?: string;
     // Order Related Details

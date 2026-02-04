@@ -67,16 +67,23 @@ const Dashboard: React.FC = () => {
             if (pl > 0) flipkart.profit += pl;
             else if (pl < 0) flipkart.loss += Math.abs(pl);
 
-            const status = order.itemReturnStatus || '';
-            if (!status || status === 'Delivered' || status === 'Sale') {
+            // Priority: orderStatus (GST Sync) -> itemReturnStatus (Original)
+            const status = order.orderStatus || order.itemReturnStatus || '';
+            const statusLower = status.toLowerCase();
+
+            if (!status || statusLower === 'delivered' || statusLower === 'sale') {
                 flipkart.deliveredCount += 1;
                 overall.deliveredCount += 1;
-            } else if (status === 'Return' || status === 'LogisticsReturn' || status === 'RTO') {
+            } else if (statusLower === 'return' || statusLower === 'logisticsreturn' || statusLower === 'rto') {
                 flipkart.rtoCount += 1;
                 overall.rtoCount += 1;
-            } else if (status === 'CustomerReturn') {
+            } else if (statusLower === 'customerreturn' || statusLower === 'return') {
                 flipkart.returnCount += 1;
                 overall.returnCount += 1;
+            } else if (statusLower === 'cancelled') {
+                // Could add cancelledCount to metrics if needed, for now treat as part of returns/rto or ignore
+                flipkart.rtoCount += 1;
+                overall.rtoCount += 1;
             }
 
             overall.sales += s;

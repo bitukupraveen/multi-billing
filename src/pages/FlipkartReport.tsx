@@ -128,7 +128,6 @@ const FlipkartReport: React.FC = () => {
                 const order: Omit<FlipkartOrder, 'id'> = {
                     // Payment Details
                     neftId: getVal(['NEFT ID'])?.toString() || '',
-                    neftType: getVal(['Neft Type'])?.toString() || '',
                     paymentDate: getVal(['Payment Date'])?.toString() || '',
                     bankSettlementValue: Number(getVal(['Bank Settlement Value'])) || 0,
                     inputGstTcsCredits: Number(getVal(['Input GST + TCS Credits'])) || 0,
@@ -179,6 +178,7 @@ const FlipkartReport: React.FC = () => {
                     offerAdjustment: Number(getVal(['Offer Adjustment'])) || 0,
 
                     // Shipping Details
+                    deadWeight: Number(getVal(['Dead Weight'])) || 0,
                     lengthBreadthHeight: getVal(['Length*Breadth*Height'])?.toString() || '',
                     volumetricWeight: Number(getVal(['Volumetric Weight'])) || 0,
                     chargeableWeightSource: getVal(['Chargeable Weight Source'])?.toString() || '',
@@ -189,6 +189,7 @@ const FlipkartReport: React.FC = () => {
                     // Order Details
                     orderDate: getVal(['Order Date'])?.toString() || '',
                     dispatchDate: getVal(['Dispatch Date'])?.toString() || '',
+                    orderType: getVal(['Order Type'])?.toString() || '',
                     fulfilmentType: getVal(['Fulfilment Type'])?.toString() || '',
                     sellerSku: getVal(['Seller SKU', 'SKU'])?.toString() || '',
                     quantity: Number(getVal(['Quantity'])) || 0,
@@ -203,7 +204,7 @@ const FlipkartReport: React.FC = () => {
                     invoiceDate: getVal(['Invoice Date', 'Buyer Invoice Date'])?.toString() || '',
 
                     // Buyer Sale Details
-                    totalSaleAmount: Number(getVal(['Total Sale Amount'])) || 0,
+                    totalSaleAmount: Number(getVal(['Sale Amount Total', 'Total Sale Amount'])) || 0,
                     totalOfferAmount: Number(getVal(['Total Offer Amount'])) || 0,
                     freeShippingOffer: Number(getVal(['Free Shipping Offer'])) || 0,
                     nonFreeShippingOffer: Number(getVal(['Non-Free Shipping Offer'])) || 0,
@@ -254,14 +255,29 @@ const FlipkartReport: React.FC = () => {
                 const gstEvent = gstMap.get(order.orderItemId) || gstMap.get(order.orderId);
 
                 if (gstEvent) {
-                    let newStatus = '';
+                    const matchedGst = gstReports.find(g => g.orderItemId === order.orderItemId || (g.orderId === order.orderId && g.orderId));
+                    let newStatus = gstEvent; // Default to GST Event Type
                     const eventLower = gstEvent.toLowerCase();
                     if (eventLower.includes('sale')) newStatus = 'Delivered';
                     else if (eventLower.includes('return')) newStatus = 'Return';
                     else if (eventLower.includes('cancel')) newStatus = 'Cancelled';
 
-                    if (newStatus && order.itemReturnStatus !== newStatus) {
-                        await update(order.id, { ...order, itemReturnStatus: newStatus });
+                    const hasChanges =
+                        order.orderStatus !== newStatus ||
+                        order.itemReturnStatus !== newStatus ||
+                        order.igstAmount !== (matchedGst?.igstAmount || 0) ||
+                        order.cgstAmount !== (matchedGst?.cgstAmount || 0) ||
+                        order.sgstAmount !== (matchedGst?.sgstAmount || 0);
+
+                    if (hasChanges) {
+                        await update(order.id, {
+                            ...order,
+                            orderStatus: newStatus,
+                            itemReturnStatus: newStatus,
+                            igstAmount: matchedGst?.igstAmount || 0,
+                            cgstAmount: matchedGst?.cgstAmount || 0,
+                            sgstAmount: matchedGst?.sgstAmount || 0
+                        });
                         updatedCount++;
                     }
                 }
@@ -559,6 +575,7 @@ const FlipkartReport: React.FC = () => {
                                 <th className="text-end">Sale Amt</th>
                                 <th className="text-end">Settlement</th>
                                 <th className="text-end">Fees</th>
+                                <th>Order Status</th>
                                 <th className="text-center pe-4">Actions</th>
                             </tr>
                         </thead>
@@ -589,6 +606,19 @@ const FlipkartReport: React.FC = () => {
                                         <td className="text-end small">₹{order.saleAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                         <td className="text-end small fw-bold text-success">₹{order.bankSettlementValue?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                         <td className="text-end small text-danger">₹{order.marketplaceFee?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                        <td>
+                                            {order.orderStatus ? (
+                                                <span className={`badge ${order.orderStatus === 'Delivered' ? 'bg-success-subtle text-success' :
+                                                    order.orderStatus === 'Return' ? 'bg-warning-subtle text-warning' :
+                                                        order.orderStatus === 'Cancelled' ? 'bg-danger-subtle text-danger' :
+                                                            'bg-light text-primary'
+                                                    } border`}>
+                                                    {order.orderStatus}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted small border border-secondary-subtle px-2 py-1 rounded">Not Synced</span>
+                                            )}
+                                        </td>
                                         <td className="text-center pe-4">
                                             <div className="d-flex justify-content-center gap-1">
                                                 <button className="btn btn-sm btn-icon btn-light" onClick={() => handleView(order)}><Eye size={16} className="text-primary" /></button>

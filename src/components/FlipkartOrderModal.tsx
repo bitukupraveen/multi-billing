@@ -89,12 +89,11 @@ const FlipkartOrderModal: React.FC<FlipkartOrderModalProps> = ({ isOpen, onClose
                         <form id="flipkartOrderForm" onSubmit={handleSubmit}>
                             <div className="row">
                                 <SectionTitle title="Payment Details" />
-                                <div className="col-md-4">{renderInput("NEFT ID", "neftId")}</div>
-                                <div className="col-md-4">{renderInput("Neft Type", "neftType")}</div>
-                                <div className="col-md-4">{renderInput("Payment Date", "paymentDate", "date")}</div>
-                                <div className="col-md-4">{renderInput("Bank Settlement Value", "bankSettlementValue", "number", "₹")}</div>
-                                <div className="col-md-4">{renderInput("Input GST + TCS Credits", "inputGstTcsCredits", "number", "₹")}</div>
-                                <div className="col-md-4">{renderInput("Income Tax Credits", "incomeTaxCredits", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("NEFT ID", "neftId")}</div>
+                                <div className="col-md-3">{renderInput("Payment Date", "paymentDate", "date")}</div>
+                                <div className="col-md-3">{renderInput("Bank Settlement Value", "bankSettlementValue", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Input GST + TCS Credits", "inputGstTcsCredits", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Income Tax Credits", "incomeTaxCredits", "number", "₹")}</div>
 
                                 <SectionTitle title="Transaction Summary" />
                                 <div className="col-md-4">{renderInput("Order ID", "orderId")}</div>
@@ -131,6 +130,9 @@ const FlipkartOrderModal: React.FC<FlipkartOrderModalProps> = ({ isOpen, onClose
                                 <div className="col-md-4">{renderInput("TCS", "tcs", "number", "₹")}</div>
                                 <div className="col-md-4">{renderInput("TDS", "tds", "number", "₹")}</div>
                                 <div className="col-md-4">{renderInput("GST on MP Fees", "gstOnMpFees", "number", "₹")}</div>
+                                <div className="col-md-4">{renderInput("IGST Amount (GST Sync)", "igstAmount", "number", "₹")}</div>
+                                <div className="col-md-4">{renderInput("CGST Amount (GST Sync)", "cgstAmount", "number", "₹")}</div>
+                                <div className="col-md-4">{renderInput("SGST Amount (GST Sync)", "sgstAmount", "number", "₹")}</div>
 
                                 <SectionTitle title="Offer Adjustments" />
                                 <div className="col-md-6">{renderInput("Offer Amount Settled as Discount in MP Fee", "offerAmountSettledAsDiscountInMpFee", "number", "₹")}</div>
@@ -141,6 +143,7 @@ const FlipkartOrderModal: React.FC<FlipkartOrderModalProps> = ({ isOpen, onClose
                                 <div className="col-md-4">{renderInput("Offer Adjustment", "offerAdjustment", "number", "₹")}</div>
 
                                 <SectionTitle title="Shipping Details" />
+                                <div className="col-md-4">{renderInput("Dead Weight (kgs)", "deadWeight", "number")}</div>
                                 <div className="col-md-4">{renderInput("Length*Breadth*Height", "lengthBreadthHeight")}</div>
                                 <div className="col-md-4">{renderInput("Volumetric Weight (kgs)", "volumetricWeight", "number")}</div>
                                 <div className="col-md-4">{renderInput("Chargeable Weight Source", "chargeableWeightSource")}</div>
@@ -151,6 +154,7 @@ const FlipkartOrderModal: React.FC<FlipkartOrderModalProps> = ({ isOpen, onClose
                                 <SectionTitle title="Order Details" />
                                 <div className="col-md-3">{renderInput("Order Date", "orderDate", "date")}</div>
                                 <div className="col-md-3">{renderInput("Dispatch Date", "dispatchDate", "date")}</div>
+                                <div className="col-md-3">{renderInput("Order Type", "orderType")}</div>
                                 <div className="col-md-3">{renderInput("Fulfilment Type", "fulfilmentType")}</div>
                                 <div className="col-md-3">{renderInput("Seller SKU", "sellerSku")}</div>
                                 <div className="col-md-3">{renderInput("Quantity", "quantity", "number")}</div>
@@ -158,14 +162,15 @@ const FlipkartOrderModal: React.FC<FlipkartOrderModalProps> = ({ isOpen, onClose
                                 <div className="col-md-3">{renderInput("ReturnType", "returnType")}</div>
                                 <div className="col-md-3">{renderInput("Shopsy Order", "shopsyOrder")}</div>
                                 <div className="col-md-3">{renderInput("Item Return Status", "itemReturnStatus")}</div>
-                                <div className="col-md-9">{renderInput("Additional Information", "additionalInformation")}</div>
+                                <div className="col-md-3">{renderInput("Order Status (GST Sync)", "orderStatus")}</div>
+                                <div className="col-md-6">{renderInput("Additional Information", "additionalInformation")}</div>
 
                                 <SectionTitle title="Buyer Invoice Details" />
                                 <div className="col-md-6">{renderInput("Invoice ID", "invoiceId")}</div>
                                 <div className="col-md-6">{renderInput("Invoice Date", "invoiceDate", "date")}</div>
 
                                 <SectionTitle title="Buyer Sale Details" />
-                                <div className="col-md-3">{renderInput("Total Sale Amount", "totalSaleAmount", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Sale Amount Total", "totalSaleAmount", "number", "₹")}</div>
                                 <div className="col-md-3">{renderInput("Total Offer Amount", "totalOfferAmount", "number", "₹")}</div>
                                 <div className="col-md-3">{renderInput("Free Shipping Offer", "freeShippingOffer", "number", "₹")}</div>
                                 <div className="col-md-3">{renderInput("Non-Free Shipping Offer", "nonFreeShippingOffer", "number", "₹")}</div>
