@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { Upload, AlertCircle, Save, CheckCircle, Loader, Eye, Edit2, Trash2, Download, ChevronLeft, ChevronRight, Search, TrendingUp, DollarSign, Percent, RefreshCcw } from 'lucide-react';
+import { Upload, AlertCircle, Save, CheckCircle, Loader, Eye, Edit2, Trash2, Download, ChevronLeft, ChevronRight, Search, TrendingUp, DollarSign, Percent, RefreshCcw, FileText } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
 import type { FlipkartOrder, FlipkartGSTReportRecord } from '../types';
 import FlipkartOrderModal from '../components/FlipkartOrderModal';
+import FlipkartReconciliationModal from '../components/FlipkartReconciliationModal';
 
 const FlipkartReport: React.FC = () => {
     const { data: savedOrders, add, update, remove, loading: firestoreLoading } = useFirestore<FlipkartOrder>('flipkartOrders');
@@ -26,6 +27,9 @@ const FlipkartReport: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<FlipkartOrder | null>(null);
     const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Reconciliation Modal State
+    const [reconciliationModalOpen, setReconciliationModalOpen] = useState(false);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -434,6 +438,14 @@ const FlipkartReport: React.FC = () => {
                         Export to Excel
                     </button>
                     <button
+                        className="btn btn-outline-info d-flex align-items-center gap-2"
+                        onClick={() => setReconciliationModalOpen(true)}
+                        disabled={savedOrders.length === 0 || gstReports.length === 0}
+                    >
+                        <FileText size={18} />
+                        Reconcile Reports
+                    </button>
+                    <button
                         className="btn btn-outline-success d-flex align-items-center gap-2"
                         onClick={handleSyncStatus}
                         disabled={saving || savedOrders.length === 0 || gstReports.length === 0}
@@ -751,7 +763,14 @@ const FlipkartReport: React.FC = () => {
                 onSave={handleSaveOrder}
                 mode={modalMode}
             />
-        </div>
+
+            <FlipkartReconciliationModal
+                isOpen={reconciliationModalOpen}
+                onClose={() => setReconciliationModalOpen(false)}
+                orders={savedOrders}
+                gstReports={gstReports}
+            />
+        </div >
     );
 };
 
