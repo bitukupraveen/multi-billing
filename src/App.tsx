@@ -15,6 +15,7 @@ import MeeshoReport from './pages/MeeshoReport';
 import MeeshoSalesRepo from './pages/MeeshoSalesRepo';
 import MeeshoSalesReturn from './pages/MeeshoSalesReturn';
 import MeeshoDashboard from './pages/MeeshoDashboard';
+import ProductPricing from './pages/ProductPricing';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route path="/meesho-sales-report" element={<MeeshoSalesRepo />} />
           <Route path="/meesho-sales-return" element={<MeeshoSalesReturn />} />
           <Route path="/meesho-dashboard" element={<MeeshoDashboard />} />
+          <Route path="/product-pricing" element={<ProductPricing />} />
         </Routes>
       </Layout>
     </Router>

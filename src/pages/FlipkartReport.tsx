@@ -127,63 +127,63 @@ const FlipkartReport: React.FC = () => {
 
                 const order: Omit<FlipkartOrder, 'id'> = {
                     // Payment Details
-                    neftId: getVal(['NEFT ID'])?.toString() || '',
+                    neftId: getVal(['NEFT ID', 'Neft Type'])?.toString() || '',
                     paymentDate: getVal(['Payment Date'])?.toString() || '',
-                    bankSettlementValue: Number(getVal(['Bank Settlement Value'])) || 0,
-                    inputGstTcsCredits: Number(getVal(['Input GST + TCS Credits'])) || 0,
-                    incomeTaxCredits: Number(getVal(['Income Tax Credits'])) || 0,
+                    bankSettlementValue: Number(getVal(['Bank Settlement Value (Rs.)', 'Bank Settlement Value'])) || 0,
+                    inputGstTcsCredits: Number(getVal(['Input GST + TCS Credits (Rs.)', 'Input GST + TCS Credits'])) || 0,
+                    incomeTaxCredits: Number(getVal(['Income Tax Credits (Rs.)', 'Income Tax Credits'])) || 0,
 
                     // Transaction Summary
                     orderId,
                     orderItemId,
-                    saleAmount: Number(getVal(['Sale Amount', 'Order Item Value'])) || 0,
+                    saleAmount: Number(getVal(['Sale Amount (Rs.)', 'Sale Amount', 'Order Item Value'])) || 0,
                     totalOfferAmountSum: Number(getVal(['Total Offer Amount (Rs.)', 'Total Offer Amount'])) || 0,
-                    myShare: Number(getVal(['My share'])) || 0,
-                    customerAddOnsAmount: Number(getVal(['Customer Add-ons Amount'])) || 0,
-                    marketplaceFee: Number(getVal(['Marketplace Fee'])) || 0,
-                    taxes: Number(getVal(['Taxes'])) || 0,
-                    offerAdjustmentsSum: Number(getVal(['Offer Adjustments'])) || 0,
-                    protectionFund: Number(getVal(['Protection Fund'])) || 0,
-                    refund: Number(getVal(['Refund'])) || 0,
+                    myShare: Number(getVal(['My share (Rs.)', 'My share'])) || 0,
+                    customerAddOnsAmount: Number(getVal(['Customer Add-ons Amount (Rs.)', 'Customer Add-ons Amount'])) || 0,
+                    marketplaceFee: Number(getVal(['Marketplace Fee (Rs.)', 'Marketplace Fee'])) || 0,
+                    taxes: Number(getVal(['Taxes (Rs.)', 'Taxes'])) || 0,
+                    offerAdjustmentsSum: Number(getVal(['Offer Adjustments (Rs.)', 'Offer Adjustments'])) || 0,
+                    protectionFund: Number(getVal(['Protection Fund (Rs.)', 'Protection Fund'])) || 0,
+                    refund: Number(getVal(['Refund (Rs.)', 'Refund'])) || 0,
 
                     // Marketplace Fees
                     tier: getVal(['Tier'])?.toString() || '',
-                    commissionRate: Number(getVal(['Commission Rate'])) || 0,
-                    commission: Number(getVal(['Commission'])) || 0,
-                    fixedFee: Number(getVal(['Fixed Fee'])) || 0,
-                    collectionFee: Number(getVal(['Collection Fee'])) || 0,
-                    pickAndPackFee: Number(getVal(['Pick And Pack Fee', 'Pick & Pack Fee'])) || 0,
-                    shippingFee: Number(getVal(['Shipping Fee'])) || 0,
-                    reverseShippingFee: Number(getVal(['Reverse Shipping Fee'])) || 0,
-                    noCostEmiFeeReimbursement: Number(getVal(['No Cost Emi Fee Reimbursement'])) || 0,
-                    installationFee: Number(getVal(['Installation Fee'])) || 0,
-                    techVisitFee: Number(getVal(['Tech Visit Fee'])) || 0,
-                    uninstallationPackagingFee: Number(getVal(['Uninstallation & Packaging Fee'])) || 0,
-                    customerAddOnsAmountRecovery: Number(getVal(['Customer Add-ons Amount Recovery'])) || 0,
-                    franchiseFee: Number(getVal(['Franchise Fee'])) || 0,
-                    shopsyMarketingFee: Number(getVal(['Shopsy Marketing Fee'])) || 0,
-                    productCancellationFee: Number(getVal(['Product Cancellation Fee'])) || 0,
+                    commissionRate: Number(getVal(['Commission Rate (%)', 'Commission Rate'])) || 0,
+                    commission: Number(getVal(['Commission (Rs.)', 'Commission'])) || 0,
+                    fixedFee: Number(getVal(['Fixed Fee  (Rs.)', 'Fixed Fee'])) || 0,
+                    collectionFee: Number(getVal(['Collection Fee (Rs.)', 'Collection Fee'])) || 0,
+                    pickAndPackFee: Number(getVal(['Pick And Pack Fee (Rs.)', 'Pick And Pack Fee'])) || 0,
+                    shippingFee: Number(getVal(['Shipping Fee (Rs.)', 'Shipping Fee'])) || 0,
+                    reverseShippingFee: Number(getVal(['Reverse Shipping Fee (Rs.)', 'Reverse Shipping Fee'])) || 0,
+                    noCostEmiFeeReimbursement: Number(getVal(['No Cost Emi Fee Reimbursement(Rs.)', 'No Cost Emi Fee Reimbursement'])) || 0,
+                    installationFee: Number(getVal(['Installation Fee (Rs.)', 'Installation Fee'])) || 0,
+                    techVisitFee: Number(getVal(['Tech Visit Fee (Rs.)', 'Tech Visit Fee'])) || 0,
+                    uninstallationPackagingFee: Number(getVal(['Uninstallation & Packaging Fee (Rs.)', 'Uninstallation & Packaging Fee'])) || 0,
+                    customerAddOnsAmountRecovery: Number(getVal(['Customer Add-ons Amount Recovery (Rs.)', 'Customer Add-ons Amount Recovery'])) || 0,
+                    franchiseFee: Number(getVal(['Franchise Fee (Rs.)', 'Franchise Fee'])) || 0,
+                    shopsyMarketingFee: Number(getVal(['Shopsy Marketing Fee (Rs.)', 'Shopsy Marketing Fee'])) || 0,
+                    productCancellationFee: Number(getVal(['Product Cancellation Fee (Rs.)', 'Product Cancellation Fee'])) || 0,
 
                     // Taxes
-                    tcs: Number(getVal(['TCS'])) || 0,
-                    tds: Number(getVal(['TDS'])) || 0,
-                    gstOnMpFees: Number(getVal(['GST on MP Fees'])) || 0,
+                    tcs: Number(getVal(['TCS (Rs.)', 'TCS'])) || 0,
+                    tds: Number(getVal(['TDS (Rs.)', 'TDS'])) || 0,
+                    gstOnMpFees: Number(getVal(['GST on MP Fees (Rs.)', 'GST on MP Fees'])) || 0,
 
                     // Offer Adjustments
-                    offerAmountSettledAsDiscountInMpFee: Number(getVal(['Offer amount settled as Discount in MP Fee'])) || 0,
-                    itemGstRate: Number(getVal(['Item GST Rate'])) || 0,
-                    discountInMpFees: Number(getVal(['Discount in MP fees'])) || 0,
-                    gstOnDiscount: Number(getVal(['GST on Discount'])) || 0,
-                    totalDiscountInMpFee: Number(getVal(['Total Discount in MP Fee'])) || 0,
-                    offerAdjustment: Number(getVal(['Offer Adjustment'])) || 0,
+                    offerAmountSettledAsDiscountInMpFee: Number(getVal(['Offer amount settled as Discount in MP Fee (Rs.)', 'Offer amount settled as Discount in MP Fee'])) || 0,
+                    itemGstRate: Number(getVal(['Item GST Rate (%)', 'Item GST Rate'])) || 0,
+                    discountInMpFees: Number(getVal(['Discount in MP fees (Rs.)', 'Discount in MP fees'])) || 0,
+                    gstOnDiscount: Number(getVal(['GST on Discount (Rs.)', 'GST on Discount'])) || 0,
+                    totalDiscountInMpFee: Number(getVal(['Total Discount in MP Fee (Rs.)', 'Total Discount in MP Fee'])) || 0,
+                    offerAdjustment: Number(getVal(['Offer Adjustment (Rs.)', 'Offer Adjustment'])) || 0,
 
                     // Shipping Details
-                    deadWeight: Number(getVal(['Dead Weight'])) || 0,
+                    deadWeight: Number(getVal(['Dead Weight (kgs)', 'Dead Weight'])) || 0,
                     lengthBreadthHeight: getVal(['Length*Breadth*Height'])?.toString() || '',
-                    volumetricWeight: Number(getVal(['Volumetric Weight'])) || 0,
+                    volumetricWeight: Number(getVal(['Volumetric Weight (kgs)', 'Volumetric Weight'])) || 0,
                     chargeableWeightSource: getVal(['Chargeable Weight Source'])?.toString() || '',
                     chargeableWeightType: getVal(['Chargeable Weight Type'])?.toString() || '',
-                    chargeableWtSlab: Number(getVal(['Chargeable Wt. Slab'])) || 0,
+                    chargeableWtSlab: Number(getVal(['Chargeable Wt. Slab (In Kgs)', 'Chargeable Wt. Slab'])) || 0,
                     shippingZone: getVal(['Shipping Zone'])?.toString() || '',
 
                     // Order Details
@@ -204,15 +204,15 @@ const FlipkartReport: React.FC = () => {
                     invoiceDate: getVal(['Invoice Date', 'Buyer Invoice Date'])?.toString() || '',
 
                     // Buyer Sale Details
-                    totalSaleAmount: Number(getVal(['Sale Amount Total', 'Total Sale Amount'])) || 0,
-                    totalOfferAmount: Number(getVal(['Total Offer Amount'])) || 0,
-                    freeShippingOffer: Number(getVal(['Free Shipping Offer'])) || 0,
-                    nonFreeShippingOffer: Number(getVal(['Non-Free Shipping Offer'])) || 0,
+                    totalSaleAmount: Number(getVal(['Sale Amount Total (Rs.)', 'Sale Amount Total'])) || 0,
+                    totalOfferAmount: Number(getVal(['Total Offer Amount', 'Total Offer Amount'])) || 0,
+                    freeShippingOffer: Number(getVal(['Free Shipping Offer (Rs.)', 'Free Shipping Offer'])) || 0,
+                    nonFreeShippingOffer: Number(getVal(['Non-Free Shipping Offer (Rs.)', 'Non-Free Shipping Offer'])) || 0,
 
                     // My Share
-                    totalMyShare: Number(getVal(['Total My Share'])) || 0,
-                    myShareFreeShippingOffer: Number(getVal(['Free Shipping Offer'])) || 0,
-                    myShareNonFreeShippingOffer: Number(getVal(['Non-Free Shipping Offer'])) || 0,
+                    totalMyShare: Number(getVal(['Total My Share (Rs.)', 'Total My Share'])) || 0,
+                    myShareFreeShippingOffer: Number(getVal(['Free Shipping Offer (Rs.)', 'Free Shipping Offer'])) || 0,
+                    myShareNonFreeShippingOffer: Number(getVal(['Non-Free Shipping Offer (Rs.)', 'Non-Free Shipping Offer'])) || 0,
 
                     uploadDate,
                     rawData: cleanRow
@@ -317,6 +317,28 @@ const FlipkartReport: React.FC = () => {
         }
     };
 
+    const handleDeleteAll = async () => {
+        if (!window.confirm("ARE YOU SURE? This will delete ALL Flipkart orders. This action cannot be undone.")) return;
+
+        setSaving(true);
+        try {
+            // Delete in batches usually, but for now we'll just loop.
+            // Firestore batching is better but useFirestore hook handles one by one.
+            // If strictly using hook:
+            const allIds = savedOrders.map(o => o.id).filter(id => id !== undefined);
+            for (const id of allIds) {
+                if (id) await remove(id);
+            }
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (err: any) {
+            console.error("Delete All Error:", err);
+            setError("Failed to delete all records.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleSaveOrder = async (updatedOrder: FlipkartOrder) => {
         if (!updatedOrder.id) return;
         await update(updatedOrder.id, updatedOrder);
@@ -396,6 +418,14 @@ const FlipkartReport: React.FC = () => {
                 <h2 className="h3 mb-0 fw-bold text-gray-800">Flipkart Order Report</h2>
                 <div className="d-flex gap-2">
                     <button
+                        className="btn btn-outline-danger d-flex align-items-center gap-2"
+                        onClick={handleDeleteAll}
+                        disabled={savedOrders.length === 0 || saving}
+                    >
+                        <Trash2 size={18} />
+                        Delete All
+                    </button>
+                    <button
                         className="btn btn-outline-primary d-flex align-items-center gap-2"
                         onClick={handleExportExcel}
                         disabled={savedOrders.length === 0}
@@ -425,39 +455,63 @@ const FlipkartReport: React.FC = () => {
 
             {/* Analysis Stats Cards */}
             <div className="row g-4 mb-4">
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm bg-primary text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <DollarSign className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Sales Amount</h6>
-                            <h2 className="fw-bold mb-0">₹{metrics.totalSale.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h2>
+                <div className="col-md-6 col-lg-4">
+                    <div className="card border-0 shadow-sm bg-primary text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <DollarSign className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Total Sales</h6>
+                            <h4 className="fw-bold mb-0">₹{metrics.totalSale.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm bg-success text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <TrendingUp className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Settlement</h6>
-                            <h2 className="fw-bold mb-0">₹{metrics.totalSettlement.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h2>
+                <div className="col-md-6 col-lg-4">
+                    <div className="card border-0 shadow-sm bg-success text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <TrendingUp className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Settlement</h6>
+                            <h4 className="fw-bold mb-0">₹{metrics.totalSettlement.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
+                            <div className="small opacity-75 mt-1">{(metrics.totalSale ? (metrics.totalSettlement / metrics.totalSale * 100).toFixed(1) : 0)}% Realization</div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm bg-info text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <Percent className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Marketplace Fees</h6>
-                            <h2 className="fw-bold mb-0">₹{metrics.totalFees.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h2>
+                <div className="col-md-6 col-lg-4">
+                    <div className="card border-0 shadow-sm bg-info text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <Percent className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Marketplace Fees</h6>
+                            <h4 className="fw-bold mb-0">₹{metrics.totalFees.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
+                            <div className="small opacity-75 mt-1">{(metrics.totalSale ? (metrics.totalFees / metrics.totalSale * 100).toFixed(1) : 0)}% of Sales</div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm bg-warning text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <AlertCircle className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Taxes (TCS/TDS)</h6>
-                            <h2 className="fw-bold mb-0">₹{metrics.totalTaxes.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h2>
+                <div className="col-md-6 col-lg-4">
+                    <div className="card border-0 shadow-sm bg-warning text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <AlertCircle className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Taxes (TCS/TDS)</h6>
+                            <h4 className="fw-bold mb-0">₹{metrics.totalTaxes.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                    <div className="card border-0 shadow-sm bg-danger text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <RefreshCcw className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Return Rate</h6>
+                            <h4 className="fw-bold mb-0">
+                                {filteredOrders.length ? ((filteredOrders.filter(o => (o.orderStatus || '').toLowerCase().includes('return')).length / filteredOrders.length) * 100).toFixed(1) : 0}%
+                            </h4>
+                            <div className="small opacity-75 mt-1">{filteredOrders.filter(o => (o.orderStatus || '').toLowerCase().includes('return')).length} Returns</div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                    <div className="card border-0 shadow-sm bg-secondary text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <CheckCircle className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Net Disbursal</h6>
+                            <h4 className="fw-bold mb-0">₹{(metrics.totalSettlement).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
+                            <div className="small opacity-75 mt-1">In Bank</div>
                         </div>
                     </div>
                 </div>

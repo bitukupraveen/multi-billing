@@ -222,30 +222,46 @@ const FlipkartCashBackReport: React.FC = () => {
 
             {/* Summary Cards */}
             <div className="row g-4 mb-4">
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm bg-primary text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <TrendingUp className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total Invoice Amount</h6>
-                            <h2 className="fw-bold mb-0">₹{summaryStats.totalInvoice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-primary text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <TrendingUp className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Total Invoice Amount</h6>
+                            <h4 className="fw-bold mb-0">₹{summaryStats.totalInvoice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm bg-info text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <DollarSign className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Total TCS Deducted</h6>
-                            <h2 className="fw-bold mb-0">₹{summaryStats.totalTcs.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-info text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <DollarSign className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Total TCS Recovered</h6>
+                            <h4 className="fw-bold mb-0">₹{summaryStats.totalTcs.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
+                            <div className="small opacity-75 mt-1">Available Credit</div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm bg-success text-white overflow-hidden">
-                        <div className="card-body p-4 position-relative">
-                            <Percent className="position-absolute opacity-25" style={{ right: '20px', bottom: '20px' }} size={64} />
-                            <h6 className="text-uppercase small fw-bold opacity-75 mb-3">Net GST Amount</h6>
-                            <h2 className="fw-bold mb-0">₹{summaryStats.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-success text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <Percent className="position-absolute opacity-25" style={{ right: '10px', bottom: '10px' }} size={48} />
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Net GST Verified</h6>
+                            <h4 className="fw-bold mb-0">₹{summaryStats.totalGst.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm bg-secondary text-white overflow-hidden h-100">
+                        <div className="card-body p-3 position-relative">
+                            <h6 className="text-uppercase small fw-bold opacity-75 mb-2">Stats</h6>
+                            <div className="d-flex justify-content-between small mb-1">
+                                <span>Records:</span>
+                                <span className="fw-bold">{filteredReports.length}</span>
+                            </div>
+                            <div className="d-flex justify-content-between small">
+                                <span>Avg Recovery:</span>
+                                <span className="fw-bold">₹{(filteredReports.length ? (summaryStats.totalTcs / filteredReports.length) : 0).toFixed(1)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

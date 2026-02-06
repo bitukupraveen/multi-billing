@@ -22,12 +22,14 @@ import type {
     FlipkartGSTReportRecord,
     FlipkartCashBackReportRecord,
     MeeshoSalesRepoRecord,
-    MeeshoSalesReturnRecord
+    MeeshoSalesReturnRecord,
+    Product
 } from '../types';
 
 const Dashboard: React.FC = () => {
     const { data: flipkartOrders, loading: flipkartLoading } = useFirestore<FlipkartOrder>('flipkartOrders');
     const { data: meeshoOrders, loading: meeshoLoading } = useFirestore<MeeshoOrder>('meeshoOrders');
+    const { data: products, loading: productsLoading } = useFirestore<Product>('products');
 
     // Additional data for cross-validation
     const { data: flipkartGst, loading: flipkartGstLoading } = useFirestore<FlipkartGSTReportRecord>('flipkartGstReports');
@@ -35,7 +37,7 @@ const Dashboard: React.FC = () => {
     const { data: meeshoSales, loading: meeshoSalesLoading } = useFirestore<MeeshoSalesRepoRecord>('meeshoSalesReports');
     const { data: meeshoReturns, loading: meeshoReturnsLoading } = useFirestore<MeeshoSalesReturnRecord>('meeshoSalesReturnReports');
 
-    const loading = flipkartLoading || meeshoLoading || flipkartGstLoading || flipkartCashbackLoading || meeshoSalesLoading || meeshoReturnsLoading;
+    const loading = flipkartLoading || meeshoLoading || flipkartGstLoading || flipkartCashbackLoading || meeshoSalesLoading || meeshoReturnsLoading || productsLoading;
 
     const stats = useMemo(() => {
         if (!flipkartOrders.length && !meeshoOrders.length && !loading) return null;
@@ -55,11 +57,24 @@ const Dashboard: React.FC = () => {
         const flipkart = initStats();
         const meesho = initStats();
 
+        // Create SKU Map
+        const skuCostMap = new Map<string, number>();
+        products.forEach(p => {
+            if (p.sku) skuCostMap.set(p.sku.toLowerCase(), p.purchasePrice || 0);
+        });
+
         // Process Flipkart
         flipkartOrders.forEach(order => {
             const s = (order.totalSaleAmount || order.saleAmount || 0);
             const set = (order.bankSettlementValue || 0);
-            const pl = order.profitLoss || 0;
+
+            // Profit Calc
+            let cost = 0;
+            if (order.sellerSku) {
+                const sku = order.sellerSku.toLowerCase();
+                cost = (skuCostMap.get(sku) || 0) * (order.quantity || 1);
+            }
+            const pl = set - cost;
 
             flipkart.sales += s;
             flipkart.settlement += set;
@@ -97,7 +112,14 @@ const Dashboard: React.FC = () => {
         meeshoOrders.forEach(order => {
             const s = (order.totalSaleAmount || 0);
             const set = (order.finalSettlementAmount || 0);
-            const pl = order.profitLoss || 0;
+
+            // Profit Calc
+            let cost = 0;
+            if (order.supplierSku) {
+                const sku = order.supplierSku.toLowerCase();
+                cost = (skuCostMap.get(sku) || 0) * (order.quantity || 1);
+            }
+            const pl = set - cost;
 
             meesho.sales += s;
             meesho.settlement += set;

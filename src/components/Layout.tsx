@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, FileText, ShoppingCart, Menu, X, Truck, FileSpreadsheet, ChevronDown, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, ShoppingCart, Menu, X, Truck, FileSpreadsheet, ChevronDown, ChevronRight, Calculator } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(window.innerWidth >= 992);
@@ -64,6 +64,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 { name: 'Meesho Report', path: '/meesho-report', icon: FileSpreadsheet },
                 { name: 'Meesho Sales Report', path: '/meesho-sales-report', icon: FileSpreadsheet },
                 { name: 'Meesho Sales Return', path: '/meesho-sales-return', icon: FileSpreadsheet },
+            ]
+        },
+        {
+            title: 'Calculator',
+            id: 'calculator',
+            items: [
+                { name: 'Product Pricing', path: '/product-pricing', icon: Calculator },
             ]
         },
     ];

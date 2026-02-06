@@ -13,7 +13,7 @@ import {
     Activity
 } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
-import type { FlipkartOrder, FlipkartGSTReportRecord, FlipkartCashBackReportRecord } from '../types';
+import type { FlipkartOrder, FlipkartGSTReportRecord, FlipkartCashBackReportRecord, Product } from '../types';
 
 const FlipkartDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -21,8 +21,9 @@ const FlipkartDashboard: React.FC = () => {
     const { data: orders, loading: ordersLoading } = useFirestore<FlipkartOrder>('flipkartOrders');
     const { data: gstReports, loading: gstLoading } = useFirestore<FlipkartGSTReportRecord>('flipkartGstReports');
     const { data: cashBackReports, loading: cashBackLoading } = useFirestore<FlipkartCashBackReportRecord>('flipkartCashBackReports');
+    const { data: products, loading: productsLoading } = useFirestore<Product>('products');
 
-    const loading = ordersLoading || gstLoading || cashBackLoading;
+    const loading = ordersLoading || gstLoading || cashBackLoading || productsLoading;
 
     const analysis = useMemo(() => {
         if (!orders.length && !gstReports.length && !cashBackReports.length && !loading) return null;
@@ -30,6 +31,7 @@ const FlipkartDashboard: React.FC = () => {
         const stats = {
             totalSales: 0,
             netProfit: 0,
+            totalCost: 0,
             bankSettlement: 0,
             gstLiability: 0,
             tcsRecoverable: 0,
@@ -59,11 +61,26 @@ const FlipkartDashboard: React.FC = () => {
             }
         };
 
+        // Create SKU Map for Cost Lookup
+        const skuCostMap = new Map<string, number>();
+        products.forEach(p => {
+            if (p.sku) skuCostMap.set(p.sku.toLowerCase(), p.purchasePrice || 0);
+        });
+
         orders.forEach(o => {
             const s = (o.totalSaleAmount || o.saleAmount || 0);
             stats.orderSalesTotal += s;
-            stats.netProfit += (o.profitLoss || 0);
             stats.bankSettlement += (o.bankSettlementValue || 0);
+
+            // Profit Calculation
+            let cost = 0;
+            if (o.sellerSku) {
+                const sku = o.sellerSku.toLowerCase();
+                const unitCost = skuCostMap.get(sku) || 0;
+                cost = unitCost * (o.quantity || 1);
+            }
+            stats.totalCost += cost;
+            stats.netProfit += (o.bankSettlementValue || 0) - cost;
 
             // Fees Breakdown
             stats.fees.commission += (o.commission || 0);
@@ -171,7 +188,13 @@ const FlipkartDashboard: React.FC = () => {
                     <MetricCard title="Gross Sales" value={analysis.totalSales} icon={ShoppingBag} gradient="gradient-primary" detail={`${analysis.orderCount} Orders Processed`} />
                 </div>
                 <div className="col-lg-3 col-md-6">
-                    <MetricCard title="Net Profit" value={analysis.netProfit} icon={TrendingUp} gradient="gradient-success" detail={`Margin: ${((analysis.netProfit / (analysis.totalSales || 1)) * 100).toFixed(1)}%`} />
+                    <MetricCard
+                        title="Net Profit"
+                        value={analysis.netProfit}
+                        icon={TrendingUp}
+                        gradient={analysis.netProfit >= 0 ? "gradient-success" : "gradient-danger"}
+                        detail={`Est. Cost: ${formatINR(analysis.totalCost)}`}
+                    />
                 </div>
                 <div className="col-lg-3 col-md-6">
                     <MetricCard title="Marketplace Fees" value={analysis.totalFees} icon={DollarSign} gradient="gradient-danger" detail={`Tax deducted: ${formatINR(analysis.totalTaxDeductions)}`} />

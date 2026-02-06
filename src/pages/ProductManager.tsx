@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Loader } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Loader, History } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
 import type { Product } from '../types';
 import ProductModal from '../components/ProductModal';
+import ProductHistoryModal from '../components/ProductHistoryModal';
 import ImportModal from '../components/ImportModal';
 
 const ProductManager: React.FC = () => {
@@ -15,6 +16,8 @@ const ProductManager: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
 
     // Filter products
     const filteredProducts = products.filter(p =>
@@ -54,7 +57,7 @@ const ProductManager: React.FC = () => {
     return (
         <div className="container-fluid p-0">
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
-                <h1 className="h3 mb-0 text-dark">Products</h1>
+                <h1 className="h3 mb-0 text-dark">All Products</h1>
                 <div className="d-flex gap-2">
                     <button
                         onClick={() => setIsImportModalOpen(true)}
@@ -151,6 +154,13 @@ const ProductManager: React.FC = () => {
                                                         <Edit2 size={18} />
                                                     </button>
                                                     <button
+                                                        onClick={() => { setHistoryProduct(product); setIsHistoryModalOpen(true); }}
+                                                        className="btn btn-sm btn-outline-primary border-0"
+                                                        title="Transaction History"
+                                                    >
+                                                        <History size={18} />
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleDelete(product.id)}
                                                         className="btn btn-sm btn-outline-danger border-0"
                                                         title="Delete"
@@ -173,6 +183,17 @@ const ProductManager: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSave}
                 product={editingProduct}
+            />
+
+            <ProductHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                product={historyProduct}
+                onAdjustItem={(product) => {
+                    setIsHistoryModalOpen(false);
+                    setEditingProduct(product);
+                    setIsModalOpen(true);
+                }}
             />
 
             <ImportModal
