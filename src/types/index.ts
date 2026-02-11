@@ -81,6 +81,40 @@ export interface PurchaseBill extends Invoice {
     deliveryCharges: number;
 }
 
+export interface ExpenseItem {
+    id: string;
+    title: string;
+    category: string; // e.g., "Office", "Rent", "Utilities"
+    defaultPrice?: number; // Optional default cost
+    taxRate?: number;
+    hsnCode?: string;
+    description?: string;
+    status?: 'active' | 'inactive';
+}
+
+export interface ExpenseBill {
+    id: string;
+    date: string;
+    vendorName: string; // Who was paid?
+    sellerGstNo?: string;
+    orderNo?: string;
+    items: {
+        expenseItemId: string;
+        expenseItemName: string;
+        description?: string;
+        quantity: number;
+        unitPrice: number;
+        discount: number;
+        taxRate: number;
+        taxAmount: number;
+        amount: number; // Total line amount (Net + Tax)
+    }[];
+    totalAmount: number;
+    notes?: string;
+    paymentMethod?: string; // e.g., "Cash", "UPI", "Bank Transfer"
+    uploadDate: string; // For sorting/metadata
+}
+
 export interface FlipkartOrder {
     id?: string;
     // Payment Details

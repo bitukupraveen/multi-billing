@@ -47,6 +47,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             ]
         },
         {
+            title: 'Expenses',
+            id: 'expenses',
+            items: [
+                { name: 'Record Expense', path: '/expenses/billing', icon: ShoppingCart },
+                { name: 'Expense History', path: '/expenses/history', icon: FileText },
+                { name: 'Manage Items', path: '/expenses/manage', icon: Package },
+            ]
+        },
+        {
             title: 'Flipkart',
             id: 'flipkart',
             items: [

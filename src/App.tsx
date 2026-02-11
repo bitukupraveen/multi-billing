@@ -17,6 +17,10 @@ import MeeshoSalesReturn from './pages/MeeshoSalesReturn';
 import MeeshoDashboard from './pages/MeeshoDashboard';
 import ProductPricing from './pages/ProductPricing';
 
+import ExpenseManager from './pages/ExpenseManager';
+import ExpenseBilling from './pages/ExpenseBilling';
+import ExpenseBillsList from './pages/ExpenseBillsList';
+
 function App() {
   return (
     <Router>
@@ -37,6 +41,10 @@ function App() {
           <Route path="/meesho-sales-return" element={<MeeshoSalesReturn />} />
           <Route path="/meesho-dashboard" element={<MeeshoDashboard />} />
           <Route path="/product-pricing" element={<ProductPricing />} />
+
+          <Route path="/expenses/manage" element={<ExpenseManager />} />
+          <Route path="/expenses/billing" element={<ExpenseBilling />} />
+          <Route path="/expenses/history" element={<ExpenseBillsList />} />
         </Routes>
       </Layout>
     </Router>
