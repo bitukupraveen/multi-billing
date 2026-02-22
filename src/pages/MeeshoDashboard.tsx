@@ -5,15 +5,19 @@ import {
     DollarSign,
     ShoppingBag,
     ShieldCheck,
-    ArrowRight,
-    Loader2,
     RotateCcw,
     Activity,
     Zap,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
+
+
 import { useFirestore } from '../hooks/useFirestore';
 import type { MeeshoOrder, MeeshoSalesRepoRecord, MeeshoSalesReturnRecord } from '../types';
+
+const LOSS_PER_RETURN = 200;
+
 
 const MeeshoDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -37,8 +41,11 @@ const MeeshoDashboard: React.FC = () => {
             deliveredCount: 0,
             returnCount: 0,
             efficiencyScore: 0,
-            bankSettlement: 0 as number
+            bankSettlement: 0 as number,
+            returnLoss: 0,
+            avgReturnLossPerOrder: 0
         };
+
 
         orders.forEach(o => {
             stats.netProfit += (o.profitLoss || 0);
@@ -59,6 +66,10 @@ const MeeshoDashboard: React.FC = () => {
 
         stats.netRealization = stats.grossSales - stats.returnsValue;
         stats.efficiencyScore = stats.orderCount > 0 ? ((stats.orderCount - stats.returnCount) / stats.orderCount) * 100 : 0;
+
+        stats.returnLoss = stats.returnCount * LOSS_PER_RETURN;
+        stats.avgReturnLossPerOrder = stats.orderCount > 0 ? stats.returnLoss / stats.orderCount : 0;
+
 
         return stats;
     }, [orders, salesReports, returnReports, loading]);
@@ -191,13 +202,22 @@ const MeeshoDashboard: React.FC = () => {
                 <div className="col-xl-4">
                     <div className="card dashboard-card border-0 shadow-sm h-100 bg-white">
                         <div className="card-header bg-transparent border-0 p-4 pb-0">
-                            <h5 className="fw-bold mb-0">Operational Health</h5>
+                            <h5 className="fw-bold mb-0">Return Management</h5>
                         </div>
-                        <div className="card-body p-4 text-center d-flex flex-column justify-content-center">
-                            <div className="position-relative d-inline-block mx-auto mb-4">
-                                <div className="display-4 fw-bold text-warning">{analysis.efficiencyScore.toFixed(0)}%</div>
-                                <div className="text-muted small fw-bold text-uppercase">Efficiency Score</div>
+                        <div className="card-body p-4 text-center">
+                            <div className="p-3 rounded-4 bg-danger bg-opacity-10 border-danger border-opacity-10 border mb-4">
+                                <div className="small fw-bold text-danger text-uppercase mb-1">Est. Return Loss</div>
+                                <h3 className="fw-bold text-danger mb-0">{formatINR(analysis.returnLoss)}</h3>
                             </div>
+
+                            <div className="p-3 rounded-4 bg-light border-white border mb-4">
+                                <div className="small fw-bold text-muted text-uppercase mb-1">Avg Loss per Order</div>
+                                <h4 className="fw-bold text-dark mb-1">₹{analysis.avgReturnLossPerOrder.toFixed(2)}</h4>
+                                <div className="extra-small text-primary mt-2">
+                                    Formula: ({analysis.returnCount} Returns × {LOSS_PER_RETURN}) / {analysis.orderCount} Orders
+                                </div>
+                            </div>
+
                             <div className="d-flex justify-content-around mt-2">
                                 <div className="text-center">
                                     <div className="h5 fw-bold mb-0 text-success">{analysis.deliveredCount}</div>
@@ -209,13 +229,11 @@ const MeeshoDashboard: React.FC = () => {
                                     <div className="small text-muted">Returned</div>
                                 </div>
                             </div>
-                            <button className="btn btn-outline-warning rounded-pill mt-5 fw-bold d-flex align-items-center justify-content-center gap-2" onClick={() => navigate('/meesho-report')}>
-                                Detailed Logs <ArrowRight size={18} />
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <style>{`
                 .glass-card { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }

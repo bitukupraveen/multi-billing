@@ -18,6 +18,15 @@ export interface Customer {
     name: string;
     email: string;
     phone: string;
+    gst?: string;
+    address: string;
+}
+
+export interface Vendor {
+    id: string;
+    name: string;
+    phone: string;
+    gst?: string;
     address: string;
 }
 
@@ -74,6 +83,7 @@ export interface Invoice {
     channelOrderId?: string;
     invoiceType?: InvoiceType;
     pdfPath?: string;
+    taxType?: 'inclusive' | 'exclusive';
 }
 
 export interface PurchaseBill extends Invoice {
@@ -110,6 +120,7 @@ export interface ExpenseBill {
         amount: number; // Total line amount (Net + Tax)
     }[];
     totalAmount: number;
+    shippingCharges?: number;
     notes?: string;
     paymentMethod?: string; // e.g., "Cash", "UPI", "Bank Transfer"
     uploadDate: string; // For sorting/metadata

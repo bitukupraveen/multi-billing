@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Save, Loader, Search } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
-import type { Product, CartItem, PurchaseBill } from '../types';
+import type { Product, CartItem, PurchaseBill, Vendor } from '../types';
 import { generateNextPurchaseId } from '../utils/invoiceUtils';
 import { doc, setDoc } from 'firebase/firestore';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import InvoicePreviewModal from '../components/InvoicePreviewModal';
 
 const PurchaseBilling: React.FC = () => {
     const { data: products, loading: productsLoading, update: updateProduct } = useFirestore<Product>('products');
+    const { data: vendors } = useFirestore<Vendor>('vendors');
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const editId = searchParams.get('id');
@@ -19,8 +20,12 @@ const PurchaseBilling: React.FC = () => {
     const [vendorName, setVendorName] = useState('');
     const [deliveryCharges, setDeliveryCharges] = useState<number>(0);
     const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+    const [taxType, setTaxType] = useState<'inclusive' | 'exclusive'>('exclusive');
     const [processing, setProcessing] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const [vendorSuggestions, setVendorSuggestions] = useState<Vendor[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
 
     // Load data if editing
     useEffect(() => {
@@ -36,6 +41,7 @@ const PurchaseBilling: React.FC = () => {
                     setVendorName(data.vendorName);
                     setDeliveryCharges(data.deliveryCharges);
                     setInvoiceDate(data.date.split('T')[0]);
+                    setTaxType(data.taxType || 'exclusive');
 
                     // Reconstruct cart items
                     const loadedItems = data.items.map(item => ({
@@ -66,8 +72,48 @@ const PurchaseBilling: React.FC = () => {
         try {
             const billId = editId || await generateNextPurchaseId();
 
-            const subTotal = cart.reduce((sum, item) => sum + (Number(item.purchasePrice) * (1 - Number(item.discount) / 100) * item.quantity), 0);
-            const taxTotal = cart.reduce((sum, item) => sum + ((Number(item.purchasePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (Number(item.gstRate) / 100)), 0);
+            let subTotal = 0;
+            let taxTotal = 0;
+
+            const billItems = cart.map(item => {
+                const quantity = item.quantity;
+                const purchasePrice = Number(item.purchasePrice);
+                const discount = Number(item.discount);
+                const gstRate = Number(item.gstRate);
+                const priceAfterDiscount = purchasePrice * (1 - discount / 100);
+
+                let itemTotal = 0;
+                let itemTax = 0;
+                let itemSubtotal = 0; // Taxable Value
+
+                if (taxType === 'inclusive') {
+                    // With Tax: Total = Price * Qty
+                    const totalValue = priceAfterDiscount * quantity;
+                    itemSubtotal = totalValue / (1 + gstRate / 100);
+                    itemTax = totalValue - itemSubtotal;
+                    itemTotal = totalValue;
+                } else {
+                    // Without Tax: Total = (Price * Qty) + Tax
+                    itemSubtotal = priceAfterDiscount * quantity;
+                    itemTax = itemSubtotal * (gstRate / 100);
+                    itemTotal = itemSubtotal + itemTax;
+                }
+
+                subTotal += itemSubtotal;
+                taxTotal += itemTax;
+
+                return {
+                    productId: item.id,
+                    productName: item.title,
+                    quantity: item.quantity,
+                    mrp: Number(item.mrp),
+                    price: Number(item.purchasePrice),
+                    discount: Number(item.discount),
+                    tax: Number(item.gstRate),
+                    total: itemTotal
+                };
+            });
+
             const totalAmount = subTotal + taxTotal + deliveryCharges;
 
             const bill: PurchaseBill = {
@@ -77,19 +123,11 @@ const PurchaseBilling: React.FC = () => {
                 customerName: 'VENDOR',
                 vendorName: vendorName,
                 deliveryCharges: deliveryCharges,
-                items: cart.map(item => ({
-                    productId: item.id,
-                    productName: item.title,
-                    quantity: item.quantity,
-                    mrp: Number(item.mrp),
-                    price: Number(item.purchasePrice),
-                    discount: Number(item.discount),
-                    tax: Number(item.gstRate),
-                    total: (Number(item.purchasePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (1 + Number(item.gstRate) / 100)
-                })),
+                items: billItems,
                 subTotal: subTotal,
                 tax: taxTotal,
-                totalAmount: totalAmount
+                totalAmount: totalAmount,
+                taxType: taxType
             };
 
             await setDoc(doc(db, 'purchase_bills', billId), bill);
@@ -112,6 +150,7 @@ const PurchaseBilling: React.FC = () => {
                 setCart([]);
                 setVendorName('');
                 setDeliveryCharges(0);
+                setTaxType('exclusive');
                 setInvoiceDate(new Date().toISOString().split('T')[0]);
                 alert(`Purchase Bill ${billId} generated successfully!`);
             } else {
@@ -161,13 +200,53 @@ const PurchaseBilling: React.FC = () => {
         const gstRate = Number(item.gstRate) || 0;
 
         const priceAfterDiscount = purchasePrice * (1 - discount / 100);
-        const totalBeforeTax = priceAfterDiscount * item.quantity;
-        const taxAmount = totalBeforeTax * (gstRate / 100);
-        return totalBeforeTax + taxAmount;
+
+        if (taxType === 'inclusive') {
+            return priceAfterDiscount * item.quantity;
+        } else {
+            const totalBeforeTax = priceAfterDiscount * item.quantity;
+            const taxAmount = totalBeforeTax * (gstRate / 100);
+            return totalBeforeTax + taxAmount;
+        }
     };
 
-    const subTotal = cart.reduce((sum, item) => sum + (Number(item.purchasePrice) * (1 - Number(item.discount) / 100) * item.quantity), 0);
-    const taxTotal = cart.reduce((sum, item) => sum + ((Number(item.purchasePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (Number(item.gstRate) / 100)), 0);
+    const calculateTaxAmount = (item: CartItem) => {
+        const purchasePrice = Number(item.purchasePrice) || 0;
+        const discount = Number(item.discount) || 0;
+        const gstRate = Number(item.gstRate) || 0;
+        const quantity = item.quantity || 0;
+
+        const priceAfterDiscount = purchasePrice * (1 - discount / 100);
+        const totalValue = priceAfterDiscount * quantity;
+
+        if (taxType === 'inclusive') {
+            const taxableValue = totalValue / (1 + gstRate / 100);
+            return totalValue - taxableValue;
+        } else {
+            return totalValue * (gstRate / 100);
+        }
+    };
+
+    const subTotal = cart.reduce((sum, item) => {
+        const priceAfterDiscount = Number(item.purchasePrice) * (1 - Number(item.discount) / 100);
+        if (taxType === 'inclusive') {
+            return sum + ((priceAfterDiscount * item.quantity) / (1 + Number(item.gstRate) / 100));
+        } else {
+            return sum + (priceAfterDiscount * item.quantity);
+        }
+    }, 0);
+
+    const taxTotal = cart.reduce((sum, item) => {
+        const priceAfterDiscount = Number(item.purchasePrice) * (1 - Number(item.discount) / 100);
+        if (taxType === 'inclusive') {
+            const totalValue = priceAfterDiscount * item.quantity;
+            const taxableValue = totalValue / (1 + Number(item.gstRate) / 100);
+            return sum + (totalValue - taxableValue);
+        } else {
+            return sum + ((priceAfterDiscount * item.quantity) * (Number(item.gstRate) / 100));
+        }
+    }, 0);
+
     const total = subTotal + taxTotal + deliveryCharges;
 
     const filteredProducts = products.filter(p =>
@@ -237,14 +316,61 @@ const PurchaseBilling: React.FC = () => {
                                 onChange={(e) => setInvoiceDate(e.target.value)}
                             />
                         </div>
-                        <div className="row g-2">
-                            <div className="col-12">
+                        <div className="row g-2 mb-3">
+
+
+                            <div className="col-6 position-relative">
                                 <input
                                     className="form-control"
                                     placeholder="Vendor Name"
                                     value={vendorName}
-                                    onChange={e => setVendorName(e.target.value)}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setVendorName(val);
+                                        if (val.trim()) {
+                                            const matches = vendors.filter(v =>
+                                                v.name.toLowerCase().includes(val.toLowerCase())
+                                            );
+                                            setVendorSuggestions(matches);
+                                            setShowSuggestions(matches.length > 0);
+                                        } else {
+                                            setShowSuggestions(false);
+                                        }
+                                    }}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 />
+                                {showSuggestions && (
+                                    <div className="position-absolute w-100 shadow rounded bg-white mt-1  overflow-auto" style={{ maxHeight: '200px', zIndex: 1021 }}>
+                                        {vendorSuggestions.map(s => (
+                                            <div
+                                                key={s.id}
+                                                className="p-2 cursor-pointer hover-bg-light border-bottom small"
+                                                onClick={() => {
+                                                    setVendorName(s.name);
+                                                    // Note: Other fields like address could be set if they existed as state.
+                                                    // In PurchaseBilling.tsx, only vendorName is currently held in state.
+                                                    setShowSuggestions(false);
+                                                }}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className="fw-bold">{s.name}</div>
+                                                <div className="text-muted">{s.phone}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="col-6">
+                                {/* <label className="small text-muted fw-bold d-block mb-1">Tax Type</label> */}
+                                <select
+                                    className="form-select"
+                                    value={taxType}
+                                    onChange={(e) => setTaxType(e.target.value as 'inclusive' | 'exclusive')}
+                                >
+                                    <option value="exclusive">Without Tax (Exclusive)</option>
+                                    <option value="inclusive">With Tax (Inclusive)</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -259,6 +385,7 @@ const PurchaseBilling: React.FC = () => {
                                     <th className="text-end border-0" style={{ width: '80px' }}>Cost</th>
                                     <th className="border-0" style={{ width: '60px' }}>Dis%</th>
                                     <th className="border-0" style={{ width: '60px' }}>Tax%</th>
+                                    <th className="border-0" style={{ width: '80px' }}>Tax Amt</th>
                                     <th className="text-end border-0">Total</th>
                                     <th className="border-0" style={{ width: '30px' }}></th>
                                 </tr>
@@ -313,6 +440,14 @@ const PurchaseBilling: React.FC = () => {
                                                 value={item.gstRate}
                                                 onChange={(e) => updateCartItem(item.id, 'gstRate', e.target.value)}
                                                 className="form-control form-control-sm p-1"
+                                            />
+                                        </td>
+                                        <td className="align-middle">
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                value={calculateTaxAmount(item).toFixed(2)}
+                                                className="form-control form-control-sm p-1 bg-light border-0"
                                             />
                                         </td>
                                         <td className="align-middle text-end fw-bold">₹{calculateItemTotal(item).toFixed(2)}</td>

@@ -5,6 +5,7 @@ import type { Product } from '../types';
 import ProductModal from '../components/ProductModal';
 import ProductHistoryModal from '../components/ProductHistoryModal';
 import ImportModal from '../components/ImportModal';
+import SyncReportsModal from '../components/SyncReportsModal';
 
 const ProductManager: React.FC = () => {
     // Determine sort/ordering strategy or just fetch all.
@@ -14,6 +15,7 @@ const ProductManager: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -59,6 +61,13 @@ const ProductManager: React.FC = () => {
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
                 <h1 className="h3 mb-0 text-dark">All Products</h1>
                 <div className="d-flex gap-2">
+                    <button
+                        onClick={() => setIsSyncModalOpen(true)}
+                        className="btn btn-outline-info d-flex align-items-center gap-2"
+                    >
+                        <History size={20} />
+                        Sync Reports
+                    </button>
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="btn btn-outline-primary d-flex align-items-center gap-2"
@@ -132,9 +141,7 @@ const ProductManager: React.FC = () => {
                                                 <div>{product.category}</div>
                                                 <div className="d-flex gap-2 mt-1">
                                                     <span className="small text-muted">GST: {product.gstRate}%</span>
-                                                    <span className={`badge ${product.status === 'inactive' ? 'text-bg-secondary' : 'text-bg-success'} rounded-pill`} style={{ fontSize: '0.7rem' }}>
-                                                        {(product.status || 'active').toUpperCase()}
-                                                    </span>
+
                                                 </div>
                                             </td>
                                             <td>
@@ -142,6 +149,11 @@ const ProductManager: React.FC = () => {
                                                     }`}>
                                                     {product.quantity} in stock
                                                 </span>
+                                                <div>
+                                                    <span className={`badge ${product.status === 'inactive' ? 'text-bg-secondary' : 'text-bg-success'} rounded-pill`} style={{ fontSize: '0.7rem' }}>
+                                                        {(product.status || 'active').toUpperCase()}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="fw-medium">₹{product.salePrice.toFixed(2)}</td>
                                             <td>
@@ -200,6 +212,12 @@ const ProductManager: React.FC = () => {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onSuccess={() => { /* maybe refresh or show toast */ }}
+            />
+
+            <SyncReportsModal
+                isOpen={isSyncModalOpen}
+                onClose={() => setIsSyncModalOpen(false)}
+                onSuccess={() => { /* Optional refresh if needed */ }}
             />
         </div>
     );

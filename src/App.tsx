@@ -20,6 +20,8 @@ import ProductPricing from './pages/ProductPricing';
 import ExpenseManager from './pages/ExpenseManager';
 import ExpenseBilling from './pages/ExpenseBilling';
 import ExpenseBillsList from './pages/ExpenseBillsList';
+import CustomerManager from './pages/CustomerManager';
+import VendorManager from './pages/VendorManager';
 
 function App() {
   return (
@@ -45,6 +47,8 @@ function App() {
           <Route path="/expenses/manage" element={<ExpenseManager />} />
           <Route path="/expenses/billing" element={<ExpenseBilling />} />
           <Route path="/expenses/history" element={<ExpenseBillsList />} />
+          <Route path="/customers" element={<CustomerManager />} />
+          <Route path="/vendors" element={<VendorManager />} />
         </Routes>
       </Layout>
     </Router>

@@ -10,11 +10,9 @@ import {
     BarChart3,
     ArrowUpRight,
     ArrowDownRight,
-    Activity,
-    AlertCircle,
-    CheckCircle2,
-    ShieldCheck
+    Activity
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 import type {
     FlipkartOrder,
@@ -25,6 +23,9 @@ import type {
     MeeshoSalesReturnRecord,
     Product
 } from '../types';
+
+const LOSS_PER_RETURN = 200; // Shipping + Packaging + Damage estimate
+
 
 const Dashboard: React.FC = () => {
     const { data: flipkartOrders, loading: flipkartLoading } = useFirestore<FlipkartOrder>('flipkartOrders');
@@ -50,8 +51,11 @@ const Dashboard: React.FC = () => {
             count: 0,
             deliveredCount: 0,
             rtoCount: 0,
-            returnCount: 0
+            returnCount: 0,
+            returnLoss: 0,
+            avgReturnLossPerOrder: 0
         });
+
 
         const overall = initStats();
         const flipkart = initStats();
@@ -222,14 +226,27 @@ const Dashboard: React.FC = () => {
         // The gap represents orders that haven't shown up in GST/Sales reports yet
         financial.unverifiedGap = Math.abs(overall.sales - financial.verifiedSales);
 
+        // Final Return Loss Calculations
+        const finalCalc = (s: any) => {
+            const totalRet = s.rtoCount + s.returnCount;
+            s.returnLoss = totalRet * LOSS_PER_RETURN;
+            s.avgReturnLossPerOrder = s.count > 0 ? s.returnLoss / s.count : 0;
+        };
+
+        finalCalc(overall);
+        finalCalc(flipkart);
+        finalCalc(meesho);
+
         return {
             overall,
             flipkart,
             meesho,
             skuPerformance,
             recentRecords,
-            financial
+            financial,
+            LOSS_PER_RETURN
         };
+
     }, [flipkartOrders, meeshoOrders, flipkartGst, flipkartCashback, meeshoSales, meeshoReturns, loading]);
 
     if (loading) {
@@ -388,66 +405,53 @@ const Dashboard: React.FC = () => {
                         <div className="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
                             <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
                                 <Activity size={20} className="text-primary" />
-                                Financial Health
+                                Return Management Analysis
                             </h5>
                         </div>
                         <div className="card-body p-4">
                             <div className="d-flex flex-column gap-4">
-                                <div>
-                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <ShieldCheck size={16} className="text-info" />
-                                            <span className="small fw-bold text-muted text-uppercase">GST Liability</span>
-                                        </div>
-                                        <span className="fw-bold text-dark">{formatINR(stats.financial.gstLiability)}</span>
+                                <div className="p-3 rounded-4 bg-danger bg-opacity-10 border-danger border-opacity-10 border">
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <span className="small fw-bold text-danger text-uppercase">Total Return Loss</span>
+                                        <div className="badge bg-danger rounded-pill">Est. ₹{stats.LOSS_PER_RETURN}/Unit</div>
                                     </div>
-                                    <div className="progress rounded-pill bg-light" style={{ height: '6px' }}>
-                                        <div className="progress-bar bg-info" style={{ width: '70%', opacity: 0.5 }}></div>
+                                    <h3 className="fw-bold text-danger mb-0">{formatINR(stats.overall.returnLoss)}</h3>
+                                    <div className="small text-danger opacity-75 mt-1">Impact on overall gross profit</div>
+                                </div>
+
+                                <div className="p-4 rounded-4 bg-light border-white border text-center">
+                                    <div className="small fw-bold text-muted text-uppercase mb-2">Avg Return Loss per Order</div>
+                                    <h2 className="fw-bold text-dark display-6 mb-1">₹{stats.overall.avgReturnLossPerOrder.toFixed(2)}</h2>
+                                    <div className="small text-primary fw-medium mt-3 px-3 py-2 bg-white rounded-pill shadow-sm d-inline-block border">
+                                        <TrendingDown size={14} className="me-1" />
+                                        Formula: (Total Returns × {stats.LOSS_PER_RETURN}) / {stats.overall.count} Orders
                                     </div>
                                 </div>
 
-                                <div>
-                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <Landmark size={16} className="text-success" />
-                                            <span className="small fw-bold text-muted text-uppercase">TCS Credits</span>
+                                <div className="row g-2">
+                                    <div className="col-6">
+                                        <div className="p-3 rounded-4 bg-white border text-start">
+                                            <div className="small text-muted mb-1">Flipkart Avg</div>
+                                            <div className="fw-bold h5 mb-0 text-primary">₹{stats.flipkart.avgReturnLossPerOrder.toFixed(2)}</div>
                                         </div>
-                                        <span className="fw-bold text-success">+{formatINR(stats.financial.tcsCredits)}</span>
                                     </div>
-                                    <div className="progress rounded-pill bg-light" style={{ height: '6px' }}>
-                                        <div className="progress-bar bg-success" style={{ width: '40%', opacity: 0.5 }}></div>
-                                    </div>
-                                </div>
-
-                                <div className="p-3 rounded-4 bg-light border-white border">
-                                    <div className="d-flex align-items-center gap-2 mb-2">
-                                        <AlertCircle size={16} className="text-warning" />
-                                        <span className="small fw-bold text-muted text-uppercase">Data Alignment</span>
-                                    </div>
-                                    <div className="d-flex justify-content-between align-items-end">
-                                        <div>
-                                            <div className="h4 fw-bold mb-0">{((stats.financial.verifiedSales / (stats.overall.sales || 1)) * 100).toFixed(1)}%</div>
-                                            <div className="small text-muted">Verification Rate</div>
-                                        </div>
-                                        <div className="text-end">
-                                            <div className="small text-muted">Mismatch Gap</div>
-                                            <div className="fw-bold text-warning">{formatINR(stats.financial.unverifiedGap)}</div>
+                                    <div className="col-6">
+                                        <div className="p-3 rounded-4 bg-white border text-start">
+                                            <div className="small text-muted mb-1">Meesho Avg</div>
+                                            <div className="fw-bold h5 mb-0 text-warning">₹{stats.meesho.avgReturnLossPerOrder.toFixed(2)}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="text-center">
-                                    <div className="small text-muted mb-2">Business Health Index</div>
-                                    <div className="d-flex align-items-center justify-content-center gap-2 text-success fw-bold">
-                                        <CheckCircle2 size={18} />
-                                        <span>SYSTEM STABLE</span>
-                                    </div>
+                                    <p className="small text-muted italic mb-0">Managing returns efficiently can improve margins by up to 5-10%</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <div className="row g-4">
                 {/* SKU Rankings */}

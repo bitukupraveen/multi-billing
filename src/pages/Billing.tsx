@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Billing: React.FC = () => {
     const { data: products, loading: productsLoading, update: updateProduct } = useFirestore<Product>('products');
+    const { data: customers } = useFirestore<Customer>('customers');
     // const { add: addInvoice } = useFirestore<any>('invoices'); // No longer needed
 
     const navigate = useNavigate();
@@ -29,6 +30,9 @@ const Billing: React.FC = () => {
     const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
     const [processing, setProcessing] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
 
     // Channel & Order Details
     const [channel, setChannel] = useState<ChannelType>('OFFLINE');
@@ -39,6 +43,7 @@ const Billing: React.FC = () => {
     const [marketplaceFee, setMarketplaceFee] = useState<string | number>(0);
     const [otherTax, setOtherTax] = useState<string | number>(0);
     const [refundAmount, setRefundAmount] = useState<string | number>(0);
+    const [taxType, setTaxType] = useState<'inclusive' | 'exclusive'>('exclusive');
 
     // Load data if editing
     React.useEffect(() => {
@@ -77,6 +82,7 @@ const Billing: React.FC = () => {
                     // Set Channel Data
                     setChannel(data.channel || 'OFFLINE');
                     setChannelOrderId(data.channelOrderId || '');
+                    setTaxType(data.taxType || 'exclusive');
                 }
             };
             loadInvoice();
@@ -91,16 +97,35 @@ const Billing: React.FC = () => {
         try {
             const invoiceId = editId || await generateNextInvoiceId(channel);
 
-            const subTotal = cart.reduce((sum, item) => sum + (Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity), 0);
-            const taxTotal = cart.reduce((sum, item) => sum + ((Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (Number(item.gstRate) / 100)), 0);
+            let subTotal = 0;
+            let taxTotal = 0;
 
-            const invoice: Invoice = {
-                id: invoiceId,
-                date: new Date(invoiceDate).toISOString(),
-                customerId: customer.id || crypto.randomUUID(),
-                customerName: customer.name,
-                customerPhone: customer.phone,
-                items: cart.map(item => ({
+            const finalItems = cart.map(item => {
+                const quantity = item.quantity;
+                const salePrice = Number(item.salePrice);
+                const discount = Number(item.discount);
+                const gstRate = Number(item.gstRate);
+                const priceAfterDiscount = salePrice * (1 - discount / 100);
+
+                let itemTotal = 0;
+                let itemTax = 0;
+                let itemSubtotal = 0;
+
+                if (taxType === 'inclusive') {
+                    const totalValue = priceAfterDiscount * quantity;
+                    itemSubtotal = totalValue / (1 + gstRate / 100);
+                    itemTax = totalValue - itemSubtotal;
+                    itemTotal = totalValue;
+                } else {
+                    itemSubtotal = priceAfterDiscount * quantity;
+                    itemTax = itemSubtotal * (gstRate / 100);
+                    itemTotal = itemSubtotal + itemTax;
+                }
+
+                subTotal += itemSubtotal;
+                taxTotal += itemTax;
+
+                return {
                     productId: item.id,
                     productName: item.title,
                     quantity: item.quantity,
@@ -108,8 +133,18 @@ const Billing: React.FC = () => {
                     price: Number(item.salePrice),
                     discount: Number(item.discount),
                     tax: Number(item.gstRate),
-                    total: (Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (1 + Number(item.gstRate) / 100)
-                })),
+                    total: itemTotal
+                };
+            });
+
+
+            const invoice: Invoice = {
+                id: invoiceId,
+                date: new Date(invoiceDate).toISOString(),
+                customerId: customer.id || crypto.randomUUID(),
+                customerName: customer.name,
+                customerPhone: customer.phone,
+                items: finalItems,
                 subTotal: subTotal,
                 tax: taxTotal,
                 // Save new fields
@@ -120,7 +155,8 @@ const Billing: React.FC = () => {
                 totalAmount: (subTotal + taxTotal + Number(logisticsFee) + Number(otherTax)) - (Number(marketplaceFee) + Number(refundAmount)),
                 channel: channel,
                 channelOrderId: channelOrderId,
-                invoiceType: 'SALES'
+                invoiceType: 'SALES',
+                taxType: taxType
             };
 
             // Create/Update Invoice
@@ -140,6 +176,7 @@ const Billing: React.FC = () => {
             if (!editId) {
                 setCart([]);
                 setCustomer({ id: '', name: '', email: '', phone: '', address: '' });
+                setTaxType('exclusive'); // Reset to default
                 setInvoiceDate(new Date().toISOString().split('T')[0]);
                 alert('Invoice generated successfully!');
             } else {
@@ -186,13 +223,56 @@ const Billing: React.FC = () => {
         const gstRate = Number(item.gstRate) || 0;
 
         const priceAfterDiscount = salePrice * (1 - discount / 100);
-        const totalBeforeTax = priceAfterDiscount * item.quantity;
-        const taxAmount = totalBeforeTax * (gstRate / 100);
-        return totalBeforeTax + taxAmount;
+
+        if (taxType === 'inclusive') {
+            // With Tax: Total is just Price * Qty (Tax included)
+            return priceAfterDiscount * item.quantity;
+        } else {
+            // Without Tax: Total = (Price * Qty) + Tax
+            const totalBeforeTax = priceAfterDiscount * item.quantity;
+            const taxAmount = totalBeforeTax * (gstRate / 100);
+            return totalBeforeTax + taxAmount;
+        }
     };
 
-    const subTotal = cart.reduce((sum, item) => sum + (Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity), 0);
-    const tax = cart.reduce((sum, item) => sum + ((Number(item.salePrice) * (1 - Number(item.discount) / 100) * item.quantity) * (Number(item.gstRate) / 100)), 0);
+    const calculateTaxAmount = (item: CartItem) => {
+        const salePrice = Number(item.salePrice) || 0;
+        const discount = Number(item.discount) || 0;
+        const gstRate = Number(item.gstRate) || 0;
+        const quantity = item.quantity || 0;
+
+        const priceAfterDiscount = salePrice * (1 - discount / 100);
+        const totalValue = priceAfterDiscount * quantity;
+
+        if (taxType === 'inclusive') {
+            const taxableValue = totalValue / (1 + gstRate / 100);
+            return totalValue - taxableValue;
+        } else {
+            return totalValue * (gstRate / 100);
+        }
+    };
+
+    // Calculate Totals for Display
+    const subTotal = cart.reduce((sum, item) => {
+        const priceAfterDiscount = Number(item.salePrice) * (1 - Number(item.discount) / 100);
+        if (taxType === 'inclusive') {
+            // Subtotal (Taxable Value) = Total / (1 + Rate)
+            return sum + ((priceAfterDiscount * item.quantity) / (1 + Number(item.gstRate) / 100));
+        } else {
+            return sum + (priceAfterDiscount * item.quantity);
+        }
+    }, 0);
+
+    const tax = cart.reduce((sum, item) => {
+        const priceAfterDiscount = Number(item.salePrice) * (1 - Number(item.discount) / 100);
+        if (taxType === 'inclusive') {
+            const totalValue = priceAfterDiscount * item.quantity;
+            const taxableValue = totalValue / (1 + Number(item.gstRate) / 100);
+            return sum + (totalValue - taxableValue);
+        } else {
+            return sum + ((priceAfterDiscount * item.quantity) * (Number(item.gstRate) / 100));
+        }
+    }, 0);
 
     // Total Calculation: + Logistics + OtherTax - MarketplaceFee - Refund
     // Wait, Marketplace Fee is usually a cost to seller, not customer?
@@ -280,7 +360,7 @@ const Billing: React.FC = () => {
                         </div>
 
                         {/* Channel Selection */}
-                        <div className="row g-2 mb-3">
+                        <div className="row g-2 mb-3" style={{ display: 'none' }}>
                             <div className="col-md-6">
                                 <label className="small text-muted fw-bold">Sales Channel</label>
                                 <select
@@ -308,16 +388,55 @@ const Billing: React.FC = () => {
                             )}
                         </div>
 
+
+
                         <div className="row g-2">
-                            <div className="col-md-6">
+                            <div className="col-md-4 position-relative">
                                 <input
                                     className="form-control"
                                     placeholder="Customer Name"
                                     value={customer.name}
-                                    onChange={e => setCustomer({ ...customer, name: e.target.value })}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setCustomer({ ...customer, name: val });
+                                        if (val.trim()) {
+                                            const matches = customers.filter(c =>
+                                                c.name.toLowerCase().includes(val.toLowerCase())
+                                            );
+                                            setCustomerSuggestions(matches);
+                                            setShowSuggestions(matches.length > 0);
+                                        } else {
+                                            setShowSuggestions(false);
+                                        }
+                                    }}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 />
+                                {showSuggestions && (
+                                    <div className="position-absolute w-100 shadow rounded bg-white mt-1  overflow-auto" style={{ maxHeight: '200px', zIndex: 1021 }}>
+                                        {customerSuggestions.map(s => (
+                                            <div
+                                                key={s.id}
+                                                className="p-2 cursor-pointer hover-bg-light border-bottom small"
+                                                onClick={() => {
+                                                    setCustomer({
+                                                        id: s.id,
+                                                        name: s.name,
+                                                        email: s.email,
+                                                        phone: s.phone,
+                                                        address: s.address
+                                                    });
+                                                    setShowSuggestions(false);
+                                                }}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className="fw-bold">{s.name}</div>
+                                                <div className="text-muted">{s.phone}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div className="col-md-6">
+                            <div className="col-md-4">
                                 <input
                                     className="form-control"
                                     placeholder="Phone Number"
@@ -325,7 +444,19 @@ const Billing: React.FC = () => {
                                     onChange={e => setCustomer({ ...customer, phone: e.target.value })}
                                 />
                             </div>
+                            <div className="col-md-4">
+                                {/* <label className="form-label small text-muted fw-bold">Tax Type</label> */}
+                                <select
+                                    className="form-select"
+                                    value={taxType}
+                                    onChange={(e) => setTaxType(e.target.value as 'inclusive' | 'exclusive')}
+                                >
+                                    <option value="exclusive">Without Tax (Exclusive)</option>
+                                    <option value="inclusive">With Tax (Inclusive)</option>
+                                </select>
+                            </div>
                         </div>
+
                     </div>
 
                     <div className="card-body overflow-auto p-0">
@@ -338,6 +469,7 @@ const Billing: React.FC = () => {
                                     <th className="border-0" style={{ width: '80px' }}>Price</th>
                                     <th className="border-0" style={{ width: '60px' }}>Dis%</th>
                                     <th className="border-0" style={{ width: '60px' }}>Tax%</th>
+                                    <th className="border-0" style={{ width: '80px' }}>Tax Amt</th>
                                     <th className="text-end border-0">Total</th>
                                     <th className="border-0" style={{ width: '30px' }}></th>
                                 </tr>
@@ -392,6 +524,14 @@ const Billing: React.FC = () => {
                                                 value={item.gstRate}
                                                 onChange={(e) => updateCartItem(item.id, 'gstRate', e.target.value)}
                                                 className="form-control form-control-sm p-1"
+                                            />
+                                        </td>
+                                        <td className="align-middle">
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                value={calculateTaxAmount(item).toFixed(2)}
+                                                className="form-control form-control-sm p-1 bg-light border-0"
                                             />
                                         </td>
                                         <td className="align-middle text-end fw-bold">₹{calculateItemTotal(item).toFixed(2)}</td>

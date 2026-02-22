@@ -38,6 +38,7 @@ const ExpenseBilling: React.FC = () => {
     const [orderNo, setOrderNo] = useState('');
     const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState('');
+    const [shippingCharges, setShippingCharges] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState('Cash');
     const [processing, setProcessing] = useState(false);
 
@@ -55,6 +56,7 @@ const ExpenseBilling: React.FC = () => {
                     setOrderNo(data.orderNo || '');
                     setInvoiceDate(data.date.split('T')[0]);
                     setNotes(data.notes || '');
+                    setShippingCharges(data.shippingCharges || 0);
                     setPaymentMethod(data.paymentMethod || 'Cash');
 
                     // Reconstruct cart items
@@ -90,7 +92,8 @@ const ExpenseBilling: React.FC = () => {
             // We'll use a custom ID generation here for simplicity "EXP-{timestamp}"
             const billId = editId || `EXP-${Date.now()}`;
 
-            const totalAmount = cart.reduce((sum, item) => sum + Number(item.amount), 0);
+            const cartTotal = cart.reduce((sum, item) => sum + Number(item.amount), 0);
+            const totalAmount = cartTotal + shippingCharges;
 
             const bill: ExpenseBill = {
                 id: billId,
@@ -110,6 +113,7 @@ const ExpenseBilling: React.FC = () => {
                     amount: item.amount
                 })),
                 totalAmount: totalAmount,
+                shippingCharges: shippingCharges,
                 notes: notes,
                 paymentMethod: paymentMethod,
                 uploadDate: new Date().toISOString()
@@ -121,6 +125,7 @@ const ExpenseBilling: React.FC = () => {
                 setCart([]);
                 setVendorName('');
                 setNotes('');
+                setShippingCharges(0);
                 setInvoiceDate(new Date().toISOString().split('T')[0]);
                 alert(`Expense Bill ${billId} saved successfully!`);
             } else {
@@ -202,7 +207,6 @@ const ExpenseBilling: React.FC = () => {
         item.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const totalAmount = cart.reduce((sum, item) => sum + Number(item.amount), 0);
     const subTotal = cart.reduce((sum, item) => sum + ((item.unitPrice * item.quantity) - item.discount), 0);
     const totalTax = cart.reduce((sum, item) => sum + item.taxAmount, 0);
     const totalDiscount = cart.reduce((sum, item) => sum + item.discount, 0);
@@ -403,7 +407,7 @@ const ExpenseBilling: React.FC = () => {
                     </div>
 
                     <div className="card-footer bg-white border-top p-3">
-                        <div className="mb-3">
+                        <div className="mb-3" style={{ display: 'none' }}>
                             <label className="form-label small text-muted">Notes</label>
                             <textarea
                                 className="form-control form-control-sm"
@@ -421,13 +425,26 @@ const ExpenseBilling: React.FC = () => {
                             <span className="text-muted">Total Tax</span>
                             <span className="fw-medium">₹{totalTax.toFixed(2)}</span>
                         </div>
+                        <div className="d-flex justify-content-between mb-2 align-items-center">
+                            <span className="text-muted">Shipping Charges</span>
+                            <div className="input-group input-group-sm" style={{ width: '120px' }}>
+                                <span className="input-group-text bg-light border-end-0">₹</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="form-control border-start-0 text-end"
+                                    value={shippingCharges}
+                                    onChange={(e) => setShippingCharges(parseFloat(e.target.value) || 0)}
+                                />
+                            </div>
+                        </div>
                         <div className="d-flex justify-content-between mb-2">
                             <span className="text-muted">Total Discount</span>
                             <span className="fw-medium text-success">-₹{totalDiscount.toFixed(2)}</span>
                         </div>
                         <div className="d-flex justify-content-between h4 fw-bold text-danger mt-2 pt-2 border-top">
                             <span>Grand Total</span>
-                            <span>₹{totalAmount.toFixed(2)}</span>
+                            <span>₹{(cart.reduce((sum, item) => sum + Number(item.amount), 0) + shippingCharges).toFixed(2)}</span>
                         </div>
 
                         <div className="d-flex gap-2 mt-4">

@@ -13,6 +13,7 @@ interface ProductHistoryModalProps {
 interface Transaction {
     id: string;
     type: 'Purchase' | 'Sale';
+    platform: string; // New field
     date: string; // ISO string
     entityName: string; // Vendor or Customer
     invoiceRef: string; // Invoice ID or Bill ID
@@ -41,6 +42,7 @@ const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({ isOpen, onClo
                 history.push({
                     id: `pur-${bill.id}`,
                     type: 'Purchase',
+                    platform: 'Purchase', // Default for purchases
                     date: bill.date,
                     entityName: bill.vendorName,
                     invoiceRef: bill.id,
@@ -60,6 +62,7 @@ const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({ isOpen, onClo
                 history.push({
                     id: `sale-${inv.id}`,
                     type: 'Sale',
+                    platform: inv.channel || 'OFFLINE', // Map channel
                     date: inv.date,
                     entityName: inv.customerName,
                     invoiceRef: inv.id,
@@ -170,6 +173,7 @@ const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({ isOpen, onClo
                                             <tr>
                                                 <th className="ps-4 py-3" style={{ width: '50px' }}></th>
                                                 <th className="py-3">Type</th>
+                                                <th className="py-3">Platform</th>
                                                 <th className="py-3">Invoice/Ref</th>
                                                 <th className="py-3">Name</th>
                                                 <th className="py-3">Date</th>
@@ -181,13 +185,13 @@ const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({ isOpen, onClo
                                         <tbody>
                                             {isLoading ? (
                                                 <tr>
-                                                    <td colSpan={8} className="text-center py-5">
+                                                    <td colSpan={9} className="text-center py-5">
                                                         <Loader className="animate-spin text-primary" />
                                                     </td>
                                                 </tr>
                                             ) : transactions.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={8} className="text-center py-5 text-muted">
+                                                    <td colSpan={9} className="text-center py-5 text-muted">
                                                         No transactions found for this product.
                                                     </td>
                                                 </tr>
@@ -203,6 +207,11 @@ const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({ isOpen, onClo
                                                         <td>
                                                             <span className={tx.type === 'Sale' ? 'text-success fw-medium' : 'text-primary fw-medium'}>
                                                                 {tx.type}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span className="badge bg-light text-dark border">
+                                                                {tx.platform}
                                                             </span>
                                                         </td>
                                                         <td className="font-monospace small text-muted">

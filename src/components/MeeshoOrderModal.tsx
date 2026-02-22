@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Eye } from 'lucide-react';
+import { Save, Eye, X } from 'lucide-react';
 import type { MeeshoOrder } from '../types';
 
 interface MeeshoOrderModalProps {
@@ -70,25 +70,27 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({ isOpen, onClose, or
     );
 
     return (
-        <div className="modal fade show d-block shadow-lg" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} tabIndex={-1}>
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }} tabIndex={-1}>
             <div className="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-                <div className="modal-content border-0 overflow-hidden" style={{ borderRadius: '1.25rem' }}>
-                    <div className="modal-header border-0 bg-white px-4 py-3 d-flex justify-content-between align-items-center bg-light">
+                <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '1rem' }}>
+                    <div className="modal-header border-0 bg-light px-4 py-3">
                         <div className="d-flex align-items-center gap-3">
-                            <div className={`p-2 rounded-lg ${isViewMode ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
-                                {isViewMode ? <Eye size={20} /> : <Save size={20} />}
+                            <div className={`p-2 rounded-circle ${isViewMode ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success'}`}>
+                                {isViewMode ? <Eye size={24} /> : <Save size={24} />}
                             </div>
                             <div>
-                                <h5 className="modal-title fw-bold text-dark">{isViewMode ? 'View Meesho Order' : 'Edit Meesho Order'}</h5>
-                                <p className="text-secondary small mb-0">Sub Order: {formData.subOrderNo}</p>
+                                <h5 className="modal-title fw-bold text-dark mb-0">{isViewMode ? 'View Order Details' : 'Edit Order Details'}</h5>
+                                <p className="text-secondary small mb-0">Sub Order: <span className="fw-medium text-dark">{formData.subOrderNo}</span></p>
                             </div>
                         </div>
-                        <button type="button" className="btn-close shadow-none" onClick={onClose}></button>
+                        <button type="button" className="btn btn-link text-secondary p-0" onClick={onClose}>
+                            <X size={24} />
+                        </button>
                     </div>
 
                     <div className="modal-body p-4 bg-white">
                         <form id="meeshoOrderForm" onSubmit={handleSubmit}>
-                            <div className="row">
+                            <div className="row g-3">
                                 <SectionTitle title="Order Related Details" />
                                 <div className="col-md-3">{renderInput("Sub Order No", "subOrderNo")}</div>
                                 <div className="col-md-3">{renderInput("Order Date", "orderDate", "date")}</div>
@@ -109,29 +111,29 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({ isOpen, onClose, or
 
                                 <SectionTitle title="Revenue Details" />
                                 <div className="col-md-3">{renderInput("Price Type", "priceType")}</div>
-                                <div className="col-md-3">{renderInput("Total Sale Amount", "totalSaleAmount", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Total Sale Return Amount", "totalSaleReturnAmount", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Fixed Fee (Revenue)", "fixedFeeRevenue", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Warehousing Fee (Revenue)", "warehousingFeeRevenue", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Return Premium", "returnPremium", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Return Premium of Return", "returnPremiumOfReturn", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Total Sale Amount (Incl. Shipping & GST)", "totalSaleAmount", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Total Sale Return Amount (Incl. Shipping & GST)", "totalSaleReturnAmount", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Fixed Fee (Incl. GST)", "fixedFeeRevenue", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Warehousing Fee (Incl. GST)", "warehousingFeeRevenue", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Return Premium (Incl. GST)", "returnPremium", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Return Premium (Incl. GST) of Return", "returnPremiumOfReturn", "number", "₹")}</div>
 
                                 <SectionTitle title="Deductions" />
-                                <div className="col-md-3">{renderInput("Commission %", "meeshoCommissionPercentage", "number")}</div>
-                                <div className="col-md-3">{renderInput("Commission (Incl. GST)", "meeshoCommission", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Gold Platform Fee", "meeshoGoldPlatformFee", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Mall Platform Fee", "meeshoMallPlatformFee", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Fixed Fee (Deduction)", "fixedFeeDeduction", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Warehousing Fee (Deduction)", "warehousingFeeDeduction", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Return Shipping", "returnShippingCharge", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("GST Compensation (PRP)", "gstCompensationPRP", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Shipping Charge", "shippingCharge", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Meesho Commission Percentage", "meeshoCommissionPercentage", "number")}</div>
+                                <div className="col-md-3">{renderInput("Meesho Commission (Incl. GST)", "meeshoCommission", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Meesho Gold Platform Fee (Incl. GST)", "meeshoGoldPlatformFee", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Meesho Mall Platform Fee (Incl. GST)", "meeshoMallPlatformFee", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Fixed Fee (Incl. GST)", "fixedFeeDeduction", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Warehousing Fee (Incl. GST)", "warehousingFeeDeduction", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Return Shipping Charge (Incl. GST)", "returnShippingCharge", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("GST Compensation (PRP Shipping)", "gstCompensationPRP", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Shipping Charge (Incl. GST)", "shippingCharge", "number", "₹")}</div>
 
                                 <SectionTitle title="Other Charges" />
-                                <div className="col-md-3">{renderInput("Support Service Charges", "otherSupportServiceCharges", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Waivers", "waivers", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("Net Support Charges", "netOtherSupportServiceCharges", "number", "₹")}</div>
-                                <div className="col-md-3">{renderInput("GST on Net Charges", "gstOnNetOtherSupportServiceCharges", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Other Support Service Charges (Excl. GST)", "otherSupportServiceCharges", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Waivers (Excl. GST)", "waivers", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("Net Other Support Service Charges (Excl. GST)", "netOtherSupportServiceCharges", "number", "₹")}</div>
+                                <div className="col-md-3">{renderInput("GST on Net Other Support Service Charges", "gstOnNetOtherSupportServiceCharges", "number", "₹")}</div>
 
                                 <SectionTitle title="TCS & TDS" />
                                 <div className="col-md-4">{renderInput("TCS", "tcs", "number", "₹")}</div>
@@ -149,22 +151,23 @@ const MeeshoOrderModal: React.FC<MeeshoOrderModalProps> = ({ isOpen, onClose, or
                         </form>
                     </div>
 
-                    <div className="modal-footer border-0 bg-light p-3 px-4 d-flex justify-content-end gap-2">
-                        <button type="button" className="btn btn-outline-secondary px-4 rounded-pill" onClick={onClose}>
-                            {isViewMode ? 'Close' : 'Cancel'}
-                        </button>
-                        {!isViewMode && (
-                            <button form="meeshoOrderForm" type="submit" className="btn btn-primary px-4 rounded-pill d-flex align-items-center gap-2">
-                                <Save size={18} />
-                                Save Order
+                    <div className="modal-footer border-0 bg-light p-3 px-4">
+                        <div className="d-flex w-100 justify-content-end gap-2">
+                            <button type="button" className="btn btn-outline-secondary px-4 rounded-pill fw-medium" onClick={onClose}>
+                                {isViewMode ? 'Close' : 'Cancel'}
                             </button>
-                        )}
+                            {!isViewMode && (
+                                <button form="meeshoOrderForm" type="submit" className="btn btn-primary px-4 rounded-pill d-flex align-items-center gap-2 fw-medium shadow-sm">
+                                    <Save size={18} />
+                                    Save Changes
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
             <style>{`
                 .ls-wide { letter-spacing: 0.05rem; }
-                .rounded-lg { border-radius: 0.75rem; }
             `}</style>
         </div>
     );

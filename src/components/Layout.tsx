@@ -34,6 +34,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             items: [
                 { name: 'Dashboard', path: '/', icon: LayoutDashboard },
                 { name: 'Products', path: '/products', icon: Package },
+                { name: 'Customers', path: '/customers', icon: ShoppingCart },
+                { name: 'Vendors', path: '/vendors', icon: Truck },
             ]
         },
         {
@@ -120,7 +122,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="d-flex vh-100 overflow-hidden bg-light">
             {/* Sidebar */}
             <aside
-                className={`transition-all bg-white border-end shadow-sm ${isSidebarOpen ? 'active' : ''
+                className={`transition-all bg-white border-end shadow-sm d-flex flex-column overflow-hidden ${isSidebarOpen ? 'active' : ''
                     }`}
                 style={{
                     width: '280px',
@@ -141,7 +143,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </button>
                 </div>
 
-                <nav className="nav nav-pills flex-column p-3 gap-1 overflow-auto h-100" style={{ paddingBottom: '80px' }}>
+                <nav className="nav nav-pills flex-column p-3 gap-1 overflow-y-auto overflow-x-hidden flex-grow-1" style={{ paddingBottom: '80px', minHeight: 0 }}>
                     {navSections.map((section) => {
                         const isOpen = openSections[section.id];
                         return (

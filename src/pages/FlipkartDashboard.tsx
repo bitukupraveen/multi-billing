@@ -1,19 +1,25 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+    Loader2,
+    AlertTriangle,
+    Activity,
+    RotateCcw,
     FileSpreadsheet,
     TrendingUp,
     DollarSign,
     Percent,
     ShoppingBag,
-    ShieldCheck,
-    ArrowRight,
-    Loader2,
-    AlertTriangle,
-    Activity
+    ShieldCheck
 } from 'lucide-react';
+
+
+
 import { useFirestore } from '../hooks/useFirestore';
 import type { FlipkartOrder, FlipkartGSTReportRecord, FlipkartCashBackReportRecord, Product } from '../types';
+
+const LOSS_PER_RETURN = 200;
+
 
 const FlipkartDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -58,8 +64,15 @@ const FlipkartDashboard: React.FC = () => {
                 tcs: 0,
                 tds: 0,
                 gstOnMpFees: 0
-            }
+            },
+            // Return Analytics
+            returnCount: 0,
+            rtoCount: 0,
+            totalReturns: 0,
+            returnLoss: 0,
+            avgReturnLossPerOrder: 0
         };
+
 
         // Create SKU Map for Cost Lookup
         const skuCostMap = new Map<string, number>();
@@ -100,7 +113,19 @@ const FlipkartDashboard: React.FC = () => {
             stats.taxes.tds += (o.tds || 0);
             stats.taxes.gstOnMpFees += (o.gstOnMpFees || 0);
             stats.totalTaxDeductions += (o.taxes || 0);
+
+            // Return Tracking
+            const status = (o.orderStatus || o.itemReturnStatus || '').toLowerCase();
+            if (status.includes('return') || status === 'rto') {
+                if (status === 'rto' || status === 'logisticsreturn') stats.rtoCount++;
+                else stats.returnCount++;
+                stats.totalReturns++;
+            }
         });
+
+        stats.returnLoss = stats.totalReturns * LOSS_PER_RETURN;
+        stats.avgReturnLossPerOrder = stats.orderCount > 0 ? stats.returnLoss / stats.orderCount : 0;
+
 
         gstReports.forEach(g => {
             stats.gstInvoiceTotal += (g.finalInvoiceAmount || 0);
@@ -330,31 +355,68 @@ const FlipkartDashboard: React.FC = () => {
             </div>
 
             <div className="row g-4">
-                {/* Quick Actions / Report Links */}
+                {/* Return Analysis Section */}
                 <div className="col-xl-4">
+                    <div className="card dashboard-card border-0 shadow-sm h-100 glass-card">
+                        <div className="card-header bg-transparent border-0 p-4 pb-0">
+                            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <RotateCcw size={20} className="text-danger" />
+                                Return Impact Analysis
+                            </h5>
+                        </div>
+                        <div className="card-body p-4">
+                            <div className="mb-4 text-center">
+                                <div className="display-4 fw-bold text-danger mb-1">
+                                    {((analysis.totalReturns / (analysis.orderCount || 1)) * 100).toFixed(1)}%
+                                </div>
+                                <div className="small text-muted fw-bold text-uppercase">Total Return Rate</div>
+                                <div className="mt-2 small text-muted">
+                                    {analysis.returnCount} Returns | {analysis.rtoCount} RTO
+                                </div>
+                            </div>
+
+                            <div className="p-3 rounded-4 bg-danger bg-opacity-10 border-danger border-opacity-10 border mb-4 text-center">
+                                <div className="small fw-bold text-danger text-uppercase mb-1">Estimated Return Loss</div>
+                                <h3 className="fw-bold text-danger mb-0">{formatINR(analysis.returnLoss)}</h3>
+                                <div className="small text-danger opacity-75 mt-1">@ ₹{LOSS_PER_RETURN} per return unit</div>
+                            </div>
+
+                            <div className="p-3 rounded-4 bg-light border-white border text-center">
+                                <div className="small fw-bold text-muted text-uppercase mb-1">Return Loss / Order</div>
+                                <h4 className="fw-bold text-dark mb-1">₹{analysis.avgReturnLossPerOrder.toFixed(2)}</h4>
+                                <div className="extra-small text-primary mt-2">
+                                    Formula: ({analysis.totalReturns} Returns × {LOSS_PER_RETURN}) / {analysis.orderCount} Orders
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Quick Actions / Report Links */}
+                <div className="col-xl-8">
                     <div className="card dashboard-card border-0 shadow-sm h-100 overflow-hidden">
                         <div className="card-header bg-white border-0 p-4 pb-0">
                             <h5 className="fw-bold mb-0">Analytics Depth</h5>
                         </div>
                         <div className="card-body p-4">
-                            <div className="d-flex flex-column gap-3">
+                            <div className="row g-3">
                                 {[
                                     { name: 'Order Report', icon: FileSpreadsheet, path: '/flipkart-report', color: 'primary', count: analysis.orderCount },
                                     { name: 'GST Report', icon: TrendingUp, path: '/flipkart-gst-report', color: 'indigo', count: analysis.gstReportCount },
                                     { name: 'Cashback Report', icon: DollarSign, path: '/flipkart-cashback-report', color: 'success', count: analysis.cashbackCount }
                                 ].map((report, idx) => (
-                                    <div key={idx} className="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light cursor-pointer hover-scale transition-all border border-white shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate(report.path)}>
-                                        <div className="d-flex align-items-center gap-3">
-                                            <div className={`bg-${report.color} text-white rounded-lg d-flex align-items-center justify-content-center shadow-sm`} style={{ width: '40px', height: '40px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                <report.icon size={20} />
+                                    <div key={idx} className="col-md-4">
+                                        <div className="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light cursor-pointer hover-scale transition-all border border-white shadow-sm h-100" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate(report.path)}>
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div className={`bg-${report.color} text-white rounded-lg d-flex align-items-center justify-content-center shadow-sm`} style={{ width: '40px', height: '40px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    <report.icon size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold text-dark small">{report.name}</div>
+                                                    <div className="extra-small text-muted">{report.count} records</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="fw-bold text-dark">{report.name}</div>
-                                                <div className="small text-muted">{report.count} records analyzed</div>
-                                            </div>
-                                        </div>
-                                        <div className="d-flex align-items-center bg-white rounded-circle p-1 shadow-sm">
-                                            <ArrowRight size={16} className="text-muted" />
                                         </div>
                                     </div>
                                 ))}
@@ -363,6 +425,7 @@ const FlipkartDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+
 
             <style>{`
                 .glass-card { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
