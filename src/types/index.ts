@@ -438,3 +438,16 @@ export interface MeeshoSalesReturnRecord {
     uploadDate: string;
     rawData?: Record<string, any>;
 }
+
+export interface MeeshoLiveOrder {
+    id?: string;
+    orderId: string;
+    subOrderId: string;
+    meeshoId: string;
+    productTitle: string;
+    skuId: string;
+    quantity: number;
+    dispatchDate: string; // Dispatch Date/SLA
+    uploadDate: string;
+    rawData?: Record<string, any>;
+}

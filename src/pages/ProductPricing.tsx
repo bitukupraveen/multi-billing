@@ -11,6 +11,11 @@ interface PricingItem {
     costOfGoods: number;
     profit: number;
     margin: number;
+    platform: string;
+    weight: number;
+    packingSize: string;
+    shippingZone: string;
+    deliveryCharge: number;
 }
 
 const ProductPricing: React.FC = () => {
@@ -18,12 +23,17 @@ const ProductPricing: React.FC = () => {
     const [sellingPrice, setSellingPrice] = useState<number | ''>('');
     const [gstPercent, setGstPercent] = useState<number | ''>(18);
     const [costOfGoods, setCostOfGoods] = useState<number | ''>('');
+    const [platform, setPlatform] = useState<string>('Flipkart');
+    const [weight, setWeight] = useState<number | ''>('');
+    const [packingSize, setPackingSize] = useState<string>('Small');
+    const [shippingZone, setShippingZone] = useState<string>('National');
 
     // Calculated values
     const [profit, setProfit] = useState<number>(0);
     const [margin, setMargin] = useState<number>(0);
     const [gstAmount, setGstAmount] = useState<number>(0);
     const [basePrice, setBasePrice] = useState<number>(0);
+    const [deliveryCharge, setDeliveryCharge] = useState<number>(0);
 
     const [savedCalculations, setSavedCalculations] = useState<PricingItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -32,27 +42,46 @@ const ProductPricing: React.FC = () => {
     // Calculate whenever inputs change
     useEffect(() => {
         calculate();
-    }, [sellingPrice, gstPercent, costOfGoods]);
+    }, [sellingPrice, gstPercent, costOfGoods, platform, weight, shippingZone, packingSize]);
 
     const calculate = () => {
         const sp = Number(sellingPrice) || 0;
         const gst = Number(gstPercent) || 0;
         const cog = Number(costOfGoods) || 0;
+        const wt = Number(weight) || 0;
 
-        // Logic: 
-        // Selling Price is inclusive of GST (Standard for India Ecommerce Listings)
-        // Base Price = SP / (1 + GST/100)
-        // GST Amount = SP - Base Price
-        // Profit = Base Price - COG
-        // Margin % = (Profit / SP) * 100 
+        let dc = 0;
+
+        // Standard Delivery Charges (Estimates based on common slabs)
+        if (platform === 'Flipkart') {
+            // Flipkart FBF/Standard Rates (Simplified slabs)
+            if (shippingZone === 'Local') dc = wt <= 0.5 ? 44 : wt <= 1 ? 55 : 70;
+            else if (shippingZone === 'Regional') dc = wt <= 0.5 ? 49 : wt <= 1 ? 65 : 85;
+            else dc = wt <= 0.5 ? 65 : wt <= 1 ? 85 : 110;
+        } else if (platform === 'Meesho') {
+            // Meesho often has flat or very low shipping for small items
+            if (shippingZone === 'Local') dc = wt <= 0.5 ? 45 : 60;
+            else if (shippingZone === 'Regional') dc = wt <= 0.5 ? 55 : 75;
+            else dc = wt <= 0.5 ? 70 : 95;
+        } else if (platform === 'Amazon') {
+            // Amazon Easy Ship Standard Rates
+            if (shippingZone === 'Local') dc = wt <= 0.5 ? 43 : wt <= 1 ? 54 : 68;
+            else if (shippingZone === 'Regional') dc = wt <= 0.5 ? 52 : wt <= 1 ? 66 : 84;
+            else dc = wt <= 0.5 ? 74 : wt <= 1 ? 92 : 115;
+        }
+
+        // Add GST on Delivery Charge (usually 18%)
+        dc = dc * 1.18;
 
         const base = sp / (1 + (gst / 100));
         const gstAmt = sp - base;
-        const prof = base - cog;
+        const totalExpenses = cog + dc;
+        const prof = base - totalExpenses;
         const marg = sp > 0 ? (prof / sp) * 100 : 0;
 
         setBasePrice(base);
         setGstAmount(gstAmt);
+        setDeliveryCharge(dc);
         setProfit(prof);
         setMargin(marg);
     };
@@ -91,6 +120,11 @@ const ProductPricing: React.FC = () => {
                 sellingPrice: Number(sellingPrice),
                 gstPercent: Number(gstPercent),
                 costOfGoods: Number(costOfGoods),
+                platform,
+                weight: Number(weight),
+                packingSize,
+                shippingZone,
+                deliveryCharge,
                 profit,
                 margin,
                 createdAt: new Date()
@@ -126,7 +160,7 @@ const ProductPricing: React.FC = () => {
             </h2>
 
             <div className="row">
-                <div className="col-lg-5 mb-4">
+                <div className="col-lg-12 mb-4">
                     <div className="card shadow-sm border-0">
                         <div className="card-header bg-white py-3">
                             <h5 className="mb-0 text-primary fw-bold">New Calculation</h5>
@@ -144,7 +178,7 @@ const ProductPricing: React.FC = () => {
                             </div>
 
                             <div className="row g-3 mb-3">
-                                <div className="col-md-6">
+                                <div className="col-md-4">
                                     <label className="form-label text-secondary small fw-bold">Selling Price (₹)</label>
                                     <input
                                         type="number"
@@ -155,7 +189,7 @@ const ProductPricing: React.FC = () => {
                                     />
                                     <div className="form-text small">Inclusive of GST</div>
                                 </div>
-                                <div className="col-md-6">
+                                <div className="col-md-4">
                                     <label className="form-label text-secondary small fw-bold">GST %</label>
                                     <input
                                         type="number"
@@ -165,17 +199,72 @@ const ProductPricing: React.FC = () => {
                                         onChange={(e) => setGstPercent(e.target.value === '' ? '' : Number(e.target.value))}
                                     />
                                 </div>
+                                <div className="col-md-4">
+                                    <label className="form-label text-secondary small fw-bold">Cost of Goods (₹)</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        placeholder="0.00"
+                                        value={costOfGoods}
+                                        onChange={(e) => setCostOfGoods(e.target.value === '' ? '' : Number(e.target.value))}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="mb-3">
-                                <label className="form-label text-secondary small fw-bold">Cost of Goods (₹)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    placeholder="0.00"
-                                    value={costOfGoods}
-                                    onChange={(e) => setCostOfGoods(e.target.value === '' ? '' : Number(e.target.value))}
-                                />
+
+
+                            <div className="p-3 bg-light rounded-3 border mb-3">
+                                <h6 className="mb-3 fw-bold text-primary small uppercase">Shipping & Logistics</h6>
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <label className="form-label text-secondary small fw-bold">Platform</label>
+                                        <select
+                                            className="form-select"
+                                            value={platform}
+                                            onChange={(e) => setPlatform(e.target.value)}
+                                        >
+                                            <option value="Flipkart">Flipkart</option>
+                                            <option value="Meesho">Meesho</option>
+                                            <option value="Amazon">Amazon</option>
+                                            <option value="Offline">Offline</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label text-secondary small fw-bold">Shipping Zone</label>
+                                        <select
+                                            className="form-select"
+                                            value={shippingZone}
+                                            onChange={(e) => setShippingZone(e.target.value)}
+                                        >
+                                            <option value="Local">Local</option>
+                                            <option value="Regional">Regional</option>
+                                            <option value="National">National</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label text-secondary small fw-bold">Dead Weight (kg)</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            placeholder="0.00"
+                                            step="0.01"
+                                            value={weight}
+                                            onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                                        />
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label text-secondary small fw-bold">Packing Size</label>
+                                        <select
+                                            className="form-select"
+                                            value={packingSize}
+                                            onChange={(e) => setPackingSize(e.target.value)}
+                                        >
+                                            <option value="Small">Small</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Large">Large</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <hr className="my-4" />
@@ -191,6 +280,13 @@ const ProductPricing: React.FC = () => {
                                     <div className="p-3 bg-light rounded-3 border">
                                         <div className="text-secondary small fw-bold mb-1">GST Amount</div>
                                         <div className="h5 mb-0">₹{gstAmount.toFixed(2)}</div>
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="p-3 bg-light rounded-3 border">
+                                        <div className="text-secondary small fw-bold mb-1">Delivery Charge (inc. 18% GST)</div>
+                                        <div className="h5 mb-0 text-primary">₹{deliveryCharge.toFixed(2)}</div>
+                                        <div className="form-text small">Platform: {platform} | {shippingZone} | {weight}kg</div>
                                     </div>
                                 </div>
                                 <div className="col-6">
@@ -219,7 +315,7 @@ const ProductPricing: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="col-lg-7">
+                <div className="col-lg-12">
                     <div className="card shadow-sm border-0">
                         <div className="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                             <h5 className="mb-0 text-primary fw-bold">Saved Calculations</h5>
@@ -236,8 +332,10 @@ const ProductPricing: React.FC = () => {
                                     <thead className="bg-light">
                                         <tr>
                                             <th className="ps-4">Product Name</th>
+                                            <th className="text-center">Platform</th>
+                                            <th className="text-center">Weight</th>
                                             <th className="text-end">Selling Price</th>
-                                            <th className="text-end">Cost</th>
+                                            <th className="text-end">Cost+Ship</th>
                                             <th className="text-end">Profit</th>
                                             <th className="text-end">Margin</th>
                                             <th className="text-end pe-4">Actions</th>
@@ -246,11 +344,11 @@ const ProductPricing: React.FC = () => {
                                     <tbody>
                                         {loading ? (
                                             <tr>
-                                                <td colSpan={6} className="text-center py-5 text-secondary">Loading...</td>
+                                                <td colSpan={8} className="text-center py-5 text-secondary">Loading...</td>
                                             </tr>
                                         ) : savedCalculations.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="text-center py-5 text-secondary">
+                                                <td colSpan={8} className="text-center py-5 text-secondary">
                                                     No saved calculations yet.
                                                 </td>
                                             </tr>
@@ -258,8 +356,10 @@ const ProductPricing: React.FC = () => {
                                             savedCalculations.map((item) => (
                                                 <tr key={item.id}>
                                                     <td className="ps-4 fw-medium">{item.productName}</td>
+                                                    <td className="text-center small">{item.platform}</td>
+                                                    <td className="text-center small">{item.weight}kg</td>
                                                     <td className="text-end">₹{item.sellingPrice.toFixed(2)}</td>
-                                                    <td className="text-end">₹{item.costOfGoods.toFixed(2)}</td>
+                                                    <td className="text-end">₹{(item.costOfGoods + (item.deliveryCharge || 0)).toFixed(2)}</td>
                                                     <td className={`text-end fw-bold ${item.profit >= 0 ? 'text-success' : 'text-danger'}`}>
                                                         ₹{item.profit.toFixed(2)}
                                                     </td>

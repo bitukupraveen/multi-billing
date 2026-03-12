@@ -72,6 +72,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             id: 'meesho',
             items: [
                 { name: 'Meesho Dashboard', path: '/meesho-dashboard', icon: LayoutDashboard },
+                { name: 'Meesho Live Orders', path: '/meesho-live-orders', icon: FileSpreadsheet },
                 { name: 'Meesho Report', path: '/meesho-report', icon: FileSpreadsheet },
                 { name: 'Meesho Sales Report', path: '/meesho-sales-report', icon: FileSpreadsheet },
                 { name: 'Meesho Sales Return', path: '/meesho-sales-return', icon: FileSpreadsheet },
